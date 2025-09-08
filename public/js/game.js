@@ -192,3 +192,58 @@ export class TiltBallGame {
     this.settings.sound = !this.settings.sound;
     this.applySettings();
     saveSettings(this.settings);
+  }
+
+  toggleHaptic() {
+    this.settings.haptic = !this.settings.haptic;
+    this.applySettings();
+    saveSettings(this.settings);
+  }
+
+  toggleTrail() {
+    this.settings.trail = !this.settings.trail;
+    this.applySettings();
+    saveSettings(this.settings);
+  }
+
+  setSensitivity(value) {
+    this.settings.sensitivity = parseInt(value);
+    this.applySettings();
+    saveSettings(this.settings);
+  }
+
+  updateUI() {
+    document.getElementById('level').textContent = this.level;
+    document.getElementById('score').textContent = this.score;
+    document.getElementById('bestScore').textContent = this.bestScore;
+  }
+
+  loadGame() {
+    const saved = loadGame();
+    if (saved) {
+      this.level = saved.level;
+      this.score = saved.score;
+      this.achievements = saved.achievements;
+    }
+  }
+
+  saveProgress() {
+    saveGame({
+      level: this.level,
+      score: this.score,
+      achievements: this.achievements
+    });
+  }
+
+  playCollisionEffect() {
+    playSound('collision', this.settings);
+    hapticFeedback(100, this.settings);
+  }
+
+  saveSettings() {
+    saveSettings(this.settings);
+  }
+
+  // You can continue adding methods like:
+  // setupLevel(), gameLoop(), checkObstacleCollision(), checkFunnelCollision(), levelComplete(), nextLevel(), etc.
+}
