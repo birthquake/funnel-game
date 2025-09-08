@@ -68,32 +68,127 @@ export class TiltBallGame {
     window.addEventListener('keydown', (e) => this.handleKeyboard(e));
   }
 
-  // Modular methods (physics, collision, UI, storage, etc.)
-  // Paste all your existing methods here, including:
-  // - generateLevelConfigs()
-  // - requestPermission()
-  // - showTutorial(), closeTutorial()
-  // - startGame(), pauseGame(), resumeGame(), restartLevel()
-  // - handleOrientation(), handleKeyboard()
-  // - getCurrentConfig(), setupLevel(), addObstacles(), createObstacle()
-  // - clearObstacles(), clearParticles(), gameLoop()
-  // - checkObstacleCollision(), checkFunnelCollision()
-  // - levelComplete(), nextLevel(), endGame(), gameOver(), restart()
-  // - startTimer(), updateTimer()
-  // - createParticles(), updateBallTrail()
-  // - updateDifficultyBadge(), showScorePopup()
-  // - toggleSettings(), toggleSound(), toggleHaptic(), toggleTrail()
-  // - setSensitivity(), applySettings()
-  // - saveGame(), loadGame(), resetProgress()
-  // - checkAchievements(), updateAchievementDisplay(), updateUI()
+  generateLevelConfigs() {
+    const configs = [];
+    for (let i = 1; i <= 100; i++) {
+      const difficulty = i <= 20 ? 'easy' :
+                         i <= 40 ? 'medium' :
+                         i <= 60 ? 'hard' :
+                         i <= 80 ? 'expert' : 'legendary';
 
-  // Example usage of modular audio/storage:
-  playCollisionEffect() {
-    playSound('collision', this.settings);
-    hapticFeedback(100, this.settings);
+      configs.push({
+        funnelSize: Math.max(60 - i * 0.5, 8),
+        obstacles: Math.min(Math.floor(i / 3), 20),
+        timeLimit: i > 25 ? Math.max(60 - (i - 25) * 1.5, 10) : 0,
+        movingObstacles: Math.min(Math.floor(i / 5), 8),
+        ballSpeed: 1 + (i * 0.03),
+        difficulty,
+        specialMechanic: ['rotating', 'maze', 'teleport', 'shrinking', 'chaos'][i % 5]
+      });
+    }
+    return configs;
   }
 
-  saveSettings() {
+  requestPermission() {
+    if (!localStorage.getItem('tiltSphereTutorialSeen')) {
+      this.showTutorial();
+      return;
+    }
+
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(permission => {
+          if (permission === 'granted') this.startGame();
+        })
+        .catch(() => this.startGame());
+    } else {
+      this.startGame();
+    }
+  }
+
+  showTutorial() {
+    document.getElementById('tutorialOverlay').style.display = 'block';
+  }
+
+  closeTutorial() {
+    document.getElementById('tutorialOverlay').style.display = 'none';
+    localStorage.setItem('tiltSphereTutorialSeen', 'true');
+    this.requestPermission();
+  }
+
+  startGame() {
+    this.gameRunning = true;
+    this.gamePaused = false;
+    this.startButton.style.display = 'none';
+    document.getElementById('menuButtons').style.display = 'flex';
+
+    window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
+
+    this.gameLoop();
+    this.startTimer();
+    playSound('start', this.settings);
+  }
+
+  pauseGame() {
+    if (!this.gameRunning) return;
+    this.gamePaused = true;
+    clearInterval(this.timerInterval);
+    document.getElementById('pauseOverlay').style.display = 'block';
+  }
+
+  resumeGame() {
+    this.gamePaused = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
+    this.startTimer();
+  }
+
+  restartLevel() {
+    this.gamePaused = false;
+    document.getElementById('pauseOverlay').style.display = 'none';
+    this.setupLevel();
+    this.startTimer();
+  }
+
+  handleOrientation(event) {
+    if (!this.gameRunning || this.gamePaused) return;
+    const gamma = event.gamma || 0;
+    const beta = event.beta || 0;
+    const config = this.getCurrentConfig();
+    const sensitivity = (this.settings.sensitivity / 100) * this.sensitivity * config.ballSpeed;
+    this.ballVelX += gamma * sensitivity * 0.1;
+    this.ballVelY += beta * sensitivity * 0.1;
+  }
+
+  handleKeyboard(event) {
+    if (!this.gameRunning || this.gamePaused) return;
+    const config = this.getCurrentConfig();
+    const force = (this.settings.sensitivity / 100) * 0.5 * config.ballSpeed;
+    switch(event.key) {
+      case 'ArrowLeft': this.ballVelX -= force; break;
+      case 'ArrowRight': this.ballVelX += force; break;
+      case 'ArrowUp': this.ballVelY -= force; break;
+      case 'ArrowDown': this.ballVelY += force; break;
+      case ' ':
+        event.preventDefault();
+        this.gamePaused ? this.resumeGame() : this.pauseGame();
+        break;
+    }
+  }
+
+  getCurrentConfig() {
+    return this.levelConfigs[Math.min(this.level - 1, this.levelConfigs.length - 1)];
+  }
+
+  applySettings() {
+    document.getElementById('soundToggle').classList.toggle('active', this.settings.sound);
+    document.getElementById('hapticToggle').classList.toggle('active', this.settings.haptic);
+    document.getElementById('trailToggle').classList.toggle('active', this.settings.trail);
+    document.getElementById('sensitivitySlider').value = this.settings.sensitivity;
+    document.getElementById('sensitivityValue').textContent = this.settings.sensitivity;
+  }
+
+  toggleSound() {
+    this.settings.sound = !this.settings.sound;
+    this.applySettings();
     saveSettings(this.settings);
-  }
-}
