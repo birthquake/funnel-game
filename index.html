@@ -411,8 +411,7 @@
         <div class="settings-panel" id="settingsPanel" style="display: none;">
             <div class="setting-item">
                 <span>Sound Effects</span>
-                <div class="toggle-switch" id="soundToggle" onclick="game.toggleSound()"></div>
-            </div>
+<div class="toggle-switch active" id="soundToggle" onclick="game.toggleSound()"></div>            </div>
             <div class="setting-item">
                 <span>Haptic Feedback</span>
                 <div class="toggle-switch active" id="hapticToggle" onclick="game.toggleHaptic()"></div>
@@ -502,7 +501,7 @@
                 this.achievements = JSON.parse(localStorage.getItem('tiltSphereAchievements') || '[]');
                 
                 this.settings = {
-                    sound: false,
+                    sound: true,
                     haptic: true,
                     trail: true,
                     sensitivity: 50
