@@ -565,11 +565,16 @@ body {
                 });
 
                 // Handle page visibility for auto-pause
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden && this.gameRunning && !this.gamePaused) {
-                        this.pauseGame();
-                    }
-                });
+                // Handle page visibility for auto-pause
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && this.gameRunning && !this.gamePaused) {
+        this.pauseGame();
+    } else if (!document.hidden && this.gameRunning) {
+        // Reset velocities when returning to the page
+        this.ballVelX = 0;
+        this.ballVelY = 0;
+    }
+});
             }
             
             generateLevelConfigs() {
@@ -709,6 +714,11 @@ body {
             resumeGame() {
                 this.gamePaused = false;
                 document.getElementById('pauseOverlay').style.display = 'none';
+
+                // Reset ball velocity to prevent accumulated motion
+    this.ballVelX = 0;
+    this.ballVelY = 0;
+                
                 this.startTimer();
             }
             
@@ -855,6 +865,12 @@ body {
                     }
                     return;
                 }
+
+                // Reset excessive velocity after pausing/resuming
+if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
+    this.ballVelX = Math.sign(this.ballVelX) * Math.min(Math.abs(this.ballVelX), 2);
+    this.ballVelY = Math.sign(this.ballVelY) * Math.min(Math.abs(this.ballVelY), 2);
+}
                 
                 // Update ball physics
                 this.ballVelX *= this.friction;
