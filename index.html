@@ -1202,52 +1202,70 @@
                 localStorage.setItem('tiltSphereSettings', JSON.stringify(this.settings));
             }
             
-            playSound(type) {
+           playSound(type) {
     if (!this.settings.sound) return;
     
-    try {
-        // Initialize audio context if needed
-        if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // Detect iOS Safari
+    const isIOSSafari = /iPad|iPhone|iPod/.test(navigator.userAgent) && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|mercury/.test(navigator.userAgent);
+    
+    if (isIOSSafari) {
+        // iOS Safari fallback - system click sound
+        try {
+            const input = document.createElement('input');
+            input.style.position = 'absolute';
+            input.style.left = '-9999px';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.focus();
+            input.click();
+            setTimeout(() => document.body.removeChild(input), 100);
+        } catch (e) {
+            console.warn('iOS audio fallback failed');
         }
-        
-        // Resume context if suspended (browser autoplay policy)
-        if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
+    } else {
+        // Full Web Audio API for all other browsers
+        try {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
+            
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            let frequency = 440;
+            let duration = 0.1;
+            
+            switch(type) {
+                case 'collision':
+                    frequency = 200;
+                    duration = 0.1;
+                    break;
+                case 'success':
+                    frequency = 800;
+                    duration = 0.3;
+                    break;
+                case 'start':
+                    frequency = 500;
+                    duration = 0.2;
+                    break;
+            }
+            
+            oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + duration);
+        } catch (error) {
+            console.warn('Web Audio API failed:', error);
         }
-        
-        const oscillator = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-        
-        let frequency = 440;
-        let duration = 0.1;
-        
-        switch(type) {
-            case 'collision':
-                frequency = 200;
-                duration = 0.1;
-                break;
-            case 'success':
-                frequency = 800;
-                duration = 0.3;
-                break;
-            case 'start':
-                frequency = 500;
-                duration = 0.2;
-                break;
-        }
-        
-        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-        
-        oscillator.start(this.audioContext.currentTime);
-        oscillator.stop(this.audioContext.currentTime + duration);
-    } catch (error) {
-        console.warn('Audio playback failed:', error);
     }
 }
             
