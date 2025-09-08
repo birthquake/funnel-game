@@ -411,7 +411,7 @@
         <div class="settings-panel" id="settingsPanel" style="display: none;">
             <div class="setting-item">
                 <span>Sound Effects</span>
-<div class="toggle-switch active" id="soundToggle" onclick="game.toggleSound()"></div>            </div>
+<div class="toggle-switch" id="soundToggle" onclick="game.toggleSound()"></div>            </div>
             <div class="setting-item">
                 <span>Haptic Feedback</span>
                 <div class="toggle-switch active" id="hapticToggle" onclick="game.toggleHaptic()"></div>
@@ -1032,33 +1032,35 @@
             updateTimer() {
                 document.getElementById('timeLeft').textContent = this.timeLeft;
             }
-            
             createParticles(x, y, color, count = 8) {
-                for (let i = 0; i < count; i++) {
-                    const particle = document.createElement('div');
-                    particle.className = 'particle';
-                    particle.style.background = color;
-                    particle.style.left = x + 'px';
-                    particle.style.top = y + 'px';
-                    
-                    const angle = (Math.PI * 2 * i) / count;
-                    const velocity = 30 + Math.random() * 20;
-                    const dx = Math.cos(angle) * velocity;
-                    const dy = Math.sin(angle) * velocity;
-                    
-                    particle.style.setProperty('--dx', dx + 'px');
-                    particle.style.setProperty('--dy', dy + 'px');
-                    particle.classList.add('particle-explosion');
-                    
-                    this.gameContainer.appendChild(particle);
-                    this.particles.push({ element: particle, life: 0.8 });
-                    
-                    setTimeout(() => {
-                        particle.remove();
-                        this.particles = this.particles.filter(p => p.element !== particle);
-                    }, 800);
-                }
-            }
+    // Prevent too many particles on slower devices
+    if (this.particles.length > 50) return;
+    
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.background = color;
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        
+        const angle = (Math.PI * 2 * i) / count;
+        const velocity = 30 + Math.random() * 20;
+        const dx = Math.cos(angle) * velocity;
+        const dy = Math.sin(angle) * velocity;
+        
+        particle.style.setProperty('--dx', dx + 'px');
+        particle.style.setProperty('--dy', dy + 'px');
+        particle.classList.add('particle-explosion');
+        
+        this.gameContainer.appendChild(particle);
+        this.particles.push({ element: particle, life: 0.8 });
+        
+        setTimeout(() => {
+            particle.remove();
+            this.particles = this.particles.filter(p => p.element !== particle);
+        }, 800);
+    }
+}
             
             updateBallTrail() {
                 // Add new trail point
