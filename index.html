@@ -507,6 +507,7 @@
                 this.containerWidth = 350;
                 this.containerHeight = 350;
                 this.ballSize = 20;
+                this.audioContext = null;
                 
                 // Load settings
                 const savedSettings = localStorage.getItem('tiltSphereSettings');
@@ -647,18 +648,27 @@
             }
             
             startGame() {
-                this.gameRunning = true;
-                this.gamePaused = false;
-                this.startButton.style.display = 'none';
-                document.getElementById('menuButtons').style.display = 'flex';
-                
-                window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
-                window.addEventListener('keydown', (e) => this.handleKeyboard(e));
-                
-                this.gameLoop();
-                this.startTimer();
-                this.playSound('start');
-            }
+    this.gameRunning = true;
+    this.gamePaused = false;
+    this.startButton.style.display = 'none';
+    document.getElementById('menuButtons').style.display = 'flex';
+    
+    // Initialize audio context on user interaction
+    if (!this.audioContext && this.settings.sound) {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (error) {
+            console.warn('Audio context creation failed:', error);
+        }
+    }
+    
+    window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
+    window.addEventListener('keydown', (e) => this.handleKeyboard(e));
+    
+    this.gameLoop();
+    this.startTimer();
+    this.playSound('start');
+}
             
             pauseGame() {
                 if (!this.gameRunning) return;
@@ -1193,41 +1203,53 @@
             }
             
             playSound(type) {
-                if (!this.settings.sound) return;
-                
-                // Web Audio API sounds (simple beeps)
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                let frequency = 440;
-                let duration = 0.1;
-                
-                switch(type) {
-                    case 'collision':
-                        frequency = 200;
-                        duration = 0.1;
-                        break;
-                    case 'success':
-                        frequency = 800;
-                        duration = 0.3;
-                        break;
-                    case 'start':
-                        frequency = 500;
-                        duration = 0.2;
-                        break;
-                }
-                
-                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + duration);
-            }
+    if (!this.settings.sound) return;
+    
+    try {
+        // Initialize audio context if needed
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        // Resume context if suspended (browser autoplay policy)
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        let frequency = 440;
+        let duration = 0.1;
+        
+        switch(type) {
+            case 'collision':
+                frequency = 200;
+                duration = 0.1;
+                break;
+            case 'success':
+                frequency = 800;
+                duration = 0.3;
+                break;
+            case 'start':
+                frequency = 500;
+                duration = 0.2;
+                break;
+        }
+        
+        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+        
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+    } catch (error) {
+        console.warn('Audio playback failed:', error);
+    }
+}
             
             hapticFeedback(duration = 50) {
                 if (!this.settings.haptic) return;
