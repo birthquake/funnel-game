@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tilt Ball Game - Star Trek Style</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            font-family: 'Courier New', monospace;
+            color: #00ff00;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 24px;
+            text-shadow: 0 0 10px #00ff00;
+            margin-bottom: 5px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .game-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle at center, #2a2a3a, #1a1a2a);
+            border: 3px solid #00ff00;
+            border-radius: 20px;
+            box-shadow: 
+                0 0 20px rgba(0, 255, 0, 0.3),
+                inset 0 0 20px rgba(0, 255, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .ball {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 30% 30%, #ffffff, #ff6b6b, #ff3333);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 15px rgba(255, 107, 107, 0.8),
+                inset -2px -2px 5px rgba(0, 0, 0, 0.3);
+            transition: none;
+            z-index: 10;
+        }
+
+        .funnel {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, #003300, #006600, #00ff00);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 0, 0.6),
+                inset 0 0 10px rgba(0, 0, 0, 0.5);
+            border: 2px solid #00ff00;
+        }
+
+        .obstacle {
+            position: absolute;
+            background: linear-gradient(45deg, #660000, #990000);
+            border: 1px solid #ff3333;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            max-width: 300px;
+        }
+
+        .level-complete {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+
+        .addiction-meter {
+            width: 200px;
+            height: 10px;
+            background: #333;
+            border: 1px solid #00ff00;
+            margin: 10px auto;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .addiction-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .start-button {
+            background: transparent;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 10px 20px;
+            font-family: inherit;
+            cursor: pointer;
+            margin: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .start-button:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px rgba(0, 255, 0, 0.8); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">FEDERATION NEURAL TRAINER</div>
+        <div class="stats">
+            <span>Level: <span id="level">1</span></span>
+            <span>Score: <span id="score">0</span></span>
+            <span>Successes: <span id="successes">0</span></span>
+        </div>
+        <div class="addiction-meter">
+            <div class="addiction-fill" id="addictionFill"></div>
+        </div>
+        <div style="font-size: 10px;">Addiction Level: <span id="addictionLevel">0%</span></div>
+    </div>
+
+    <div class="game-container" id="gameContainer">
+        <div class="ball" id="ball"></div>
+        <div class="funnel" id="funnel"></div>
+    </div>
+
+    <div class="controls">
+        <button class="start-button" id="startButton">REQUEST DEVICE ORIENTATION</button>
+        <div>Tilt your device to guide the disc into the funnel</div>
+        <div style="margin-top: 10px; font-size: 10px;">
+            "The game enhances concentration and provides... pleasure" - Riker
+        </div>
+    </div>
+
+    <div class="level-complete" id="levelComplete">
+        <h2>LEVEL COMPLETE</h2>
+        <p id="levelMessage"></p>
+        <button class="start-button" onclick="nextLevel()">CONTINUE</button>
+    </div>
+
+    <script>
+        class TiltBallGame {
+            constructor() {
+                this.ball = document.getElementById('ball');
+                this.funnel = document.getElementById('funnel');
+                this.gameContainer = document.getElementById('gameContainer');
+                this.startButton = document.getElementById('startButton');
+                
+                this.ballX = 165;
+                this.ballY = 165;
+                this.ballVelX = 0;
+                this.ballVelY = 0;
+                this.friction = 0.95;
+                this.sensitivity = 0.5;
+                
+                this.level = 1;
+                this.score = 0;
+                this.successes = 0;
+                this.addiction = 0;
+                this.gameRunning = false;
+                this.obstacles = [];
+                
+                this.containerWidth = 350;
+                this.containerHeight = 350;
+                this.ballSize = 20;
+                
+                this.setupLevel();
+                this.updateUI();
+                
+                this.startButton.addEventListener('click', () => this.requestPermission());
+            }
+            
+            async requestPermission() {
+                try {
+                    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        if (permission === 'granted') {
+                            this.startGame();
+                        }
+                    } else {
+                        this.startGame();
+                    }
+                } catch (error) {
+                    console.error('Permission request failed:', error);
+                    this.startGame(); // Try anyway for non-iOS devices
+                }
+            }
+            
+            startGame() {
+                this.gameRunning = true;
+                this.startButton.style.display = 'none';
+                
+                window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
+                
+                // Fallback for desktop testing
+                window.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                
+                this.gameLoop();
+            }
+            
+            handleOrientation(event) {
+                if (!this.gameRunning) return;
+                
+                const gamma = event.gamma || 0; // Left-right tilt
+                const beta = event.beta || 0;   // Front-back tilt
+                
+                this.ballVelX += gamma * this.sensitivity * 0.1;
+                this.ballVelY += beta * this.sensitivity * 0.1;
+            }
+            
+            handleKeyboard(event) {
+                if (!this.gameRunning) return;
+                
+                const force = 0.5;
+                switch(event.key) {
+                    case 'ArrowLeft': this.ballVelX -= force; break;
+                    case 'ArrowRight': this.ballVelX += force; break;
+                    case 'ArrowUp': this.ballVelY -= force; break;
+                    case 'ArrowDown': this.ballVelY += force; break;
+                }
+            }
+            
+            setupLevel() {
+                this.clearObstacles();
+                
+                const funnelSizes = [60, 55, 50, 45, 40, 35, 30, 25, 20, 15];
+                const funnelSize = funnelSizes[Math.min(this.level - 1, funnelSizes.length - 1)];
+                
+                this.funnel.style.width = funnelSize + 'px';
+                this.funnel.style.height = funnelSize + 'px';
+                
+                // Position funnel randomly but not too close to edges
+                const margin = funnelSize + 20;
+                this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - funnelSize);
+                this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - funnelSize);
+                
+                this.funnel.style.left = this.funnelX + 'px';
+                this.funnel.style.top = this.funnelY + 'px';
+                
+                // Add obstacles for higher levels
+                if (this.level >= 3) {
+                    this.addObstacles();
+                }
+                
+                // Reset ball position
+                this.ballX = 165;
+                this.ballY = 165;
+                this.ballVelX = 0;
+                this.ballVelY = 0;
+            }
+            
+            addObstacles() {
+                const numObstacles = Math.min(Math.floor(this.level / 2), 5);
+                
+                for (let i = 0; i < numObstacles; i++) {
+                    const obstacle = document.createElement('div');
+                    obstacle.className = 'obstacle';
+                    
+                    const size = 15 + Math.random() * 20;
+                    obstacle.style.width = size + 'px';
+                    obstacle.style.height = size + 'px';
+                    obstacle.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                    
+                    let x, y;
+                    let validPosition = false;
+                    let attempts = 0;
+                    
+                    while (!validPosition && attempts < 50) {
+                        x = Math.random() * (this.containerWidth - size);
+                        y = Math.random() * (this.containerHeight - size);
+                        
+                        // Check distance from ball start position
+                        const ballDist = Math.sqrt((x - 165) ** 2 + (y - 165) ** 2);
+                        // Check distance from funnel
+                        const funnelDist = Math.sqrt((x - this.funnelX) ** 2 + (y - this.funnelY) ** 2);
+                        
+                        if (ballDist > 50 && funnelDist > 60) {
+                            validPosition = true;
+                        }
+                        attempts++;
+                    }
+                    
+                    obstacle.style.left = x + 'px';
+                    obstacle.style.top = y + 'px';
+                    
+                    this.gameContainer.appendChild(obstacle);
+                    this.obstacles.push({ element: obstacle, x, y, width: size, height: size });
+                }
+            }
+            
+            clearObstacles() {
+                this.obstacles.forEach(obs => obs.element.remove());
+                this.obstacles = [];
+            }
+            
+            gameLoop() {
+                if (!this.gameRunning) return;
+                
+                // Update ball physics
+                this.ballVelX *= this.friction;
+                this.ballVelY *= this.friction;
+                
+                this.ballX += this.ballVelX;
+                this.ballY += this.ballVelY;
+                
+                // Wall collision
+                if (this.ballX <= 0) {
+                    this.ballX = 0;
+                    this.ballVelX *= -0.7;
+                }
+                if (this.ballX >= this.containerWidth - this.ballSize) {
+                    this.ballX = this.containerWidth - this.ballSize;
+                    this.ballVelX *= -0.7;
+                }
+                if (this.ballY <= 0) {
+                    this.ballY = 0;
+                    this.ballVelY *= -0.7;
+                }
+                if (this.ballY >= this.containerHeight - this.ballSize) {
+                    this.ballY = this.containerHeight - this.ballSize;
+                    this.ballVelY *= -0.7;
+                }
+                
+                // Obstacle collision
+                this.checkObstacleCollision();
+                
+                // Funnel collision
+                this.checkFunnelCollision();
+                
+                // Update ball position
+                this.ball.style.left = this.ballX + 'px';
+                this.ball.style.top = this.ballY + 'px';
+                
+                requestAnimationFrame(() => this.gameLoop());
+            }
+            
+            checkObstacleCollision() {
+                this.obstacles.forEach(obs => {
+                    if (this.ballX < obs.x + obs.width &&
+                        this.ballX + this.ballSize > obs.x &&
+                        this.ballY < obs.y + obs.height &&
+                        this.ballY + this.ballSize > obs.y) {
+                        
+                        // Simple bounce
+                        this.ballVelX *= -0.5;
+                        this.ballVelY *= -0.5;
+                        
+                        // Push ball away from obstacle
+                        const centerX = obs.x + obs.width / 2;
+                        const centerY = obs.y + obs.height / 2;
+                        const ballCenterX = this.ballX + this.ballSize / 2;
+                        const ballCenterY = this.ballY + this.ballSize / 2;
+                        
+                        const dx = ballCenterX - centerX;
+                        const dy = ballCenterY - centerY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 0) {
+                            this.ballVelX += (dx / distance) * 2;
+                            this.ballVelY += (dy / distance) * 2;
+                        }
+                    }
+                });
+            }
+            
+            checkFunnelCollision() {
+                const funnelSize = parseInt(this.funnel.style.width);
+                const funnelCenterX = this.funnelX + funnelSize / 2;
+                const funnelCenterY = this.funnelY + funnelSize / 2;
+                const ballCenterX = this.ballX + this.ballSize / 2;
+                const ballCenterY = this.ballY + this.ballSize / 2;
+                
+                const distance = Math.sqrt(
+                    (ballCenterX - funnelCenterX) ** 2 + 
+                    (ballCenterY - funnelCenterY) ** 2
+                );
+                
+                if (distance < funnelSize / 2 - 5) {
+                    this.levelComplete();
+                }
+            }
+            
+            levelComplete() {
+                this.successes++;
+                this.score += this.level * 100;
+                this.addiction = Math.min(this.addiction + 10, 100);
+                
+                this.gameContainer.classList.add('pulse');
+                setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
+                
+                document.getElementById('levelMessage').innerHTML = 
+                    `Excellent work, Ensign!<br>
+                    Level ${this.level} completed<br>
+                    +${this.level * 100} points<br><br>
+                    "The game is... quite stimulating" - Troi`;
+                
+                document.getElementById('levelComplete').style.display = 'block';
+                this.updateUI();
+            }
+            
+            nextLevel() {
+                this.level++;
+                document.getElementById('levelComplete').style.display = 'none';
+                this.setupLevel();
+                this.updateUI();
+                
+                if (this.level > 10) {
+                    this.endGame();
+                }
+            }
+            
+            endGame() {
+                document.getElementById('levelMessage').innerHTML = 
+                    `TRAINING COMPLETE<br>
+                    You have mastered all levels!<br>
+                    Final Score: ${this.score}<br><br>
+                    "Fascinating... the neural pathways have been<br>
+                    significantly enhanced." - Data`;
+                
+                document.getElementById('levelComplete').style.display = 'block';
+                document.querySelector('#levelComplete button').style.display = 'none';
+            }
+            
+            updateUI() {
+                document.getElementById('level').textContent = this.level;
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('successes').textContent = this.successes;
+                document.getElementById('addictionLevel').textContent = this.addiction + '%';
+                document.getElementById('addictionFill').style.width = this.addiction + '%';
+            }
+        }
+        
+        // Global function for the button
+        function nextLevel() {
+            game.nextLevel();
+        }
+        
+        // Start the game
+        const game = new TiltBallGame();
+    </script>
+</body>
+</html>
