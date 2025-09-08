@@ -948,8 +948,9 @@
                 // Auto-save progress after completing a level
                 this.saveGame();
                 
-                // Create success particles
+                // Enhanced visual feedback
                 this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#68d391', 20);
+                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#ffd700', 12);
                 
                 this.gameContainer.classList.add('pulse');
                 setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
@@ -959,23 +960,19 @@
                 
                 this.checkAchievements();
                 
-                document.getElementById('completeTitle').textContent = 'LEVEL COMPLETE!';
-                document.getElementById('levelMessage').innerHTML = 
-                    `Level ${this.level} completed!<br>
-                    Level Bonus: ${levelBonus} points<br>
-                    Time Bonus: ${timeBonus} points<br>
-                    Total Score: ${this.score}<br><br>
-                    Ready for the next challenge?`;
+                // Show floating score popup
+                this.showScorePopup(levelBonus, timeBonus, totalBonus);
                 
-                document.getElementById('levelComplete').style.display = 'block';
-                document.querySelector('#levelComplete button').textContent = 'NEXT LEVEL';
-                document.querySelector('#levelComplete button').onclick = () => this.nextLevel();
+                // Auto-advance to next level after brief delay
+                setTimeout(() => {
+                    this.nextLevel();
+                }, 1500);
+                
                 this.updateUI();
             }
             
             nextLevel() {
                 this.level++;
-                document.getElementById('levelComplete').style.display = 'none';
                 
                 if (this.level > this.levelConfigs.length) {
                     this.endGame();
@@ -1107,6 +1104,58 @@
                 const badge = document.getElementById('difficultyBadge');
                 badge.className = `difficulty-badge difficulty-${difficulty}`;
                 badge.textContent = difficulty.toUpperCase();
+            }
+
+            showScorePopup(levelBonus, timeBonus, totalBonus) {
+                const popup = document.createElement('div');
+                popup.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: #68d391;
+                    padding: 15px;
+                    border-radius: 10px;
+                    font-size: 14px;
+                    text-align: center;
+                    z-index: 50;
+                    border: 1px solid #68d391;
+                    pointer-events: none;
+                    animation: popupFade 2s ease-out forwards;
+                `;
+                
+                popup.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 5px;">Level ${this.level} Complete!</div>
+                    <div style="font-size: 12px;">
+                        Level Bonus: +${levelBonus}<br>
+                        Time Bonus: +${timeBonus}<br>
+                        <strong>Total: +${totalBonus}</strong>
+                    </div>
+                `;
+                
+                // Add CSS animation if not already defined
+                if (!document.getElementById('popupStyles')) {
+                    const style = document.createElement('style');
+                    style.id = 'popupStyles';
+                    style.textContent = `
+                        @keyframes popupFade {
+                            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+                            30% { transform: translate(-50%, -50%) scale(1); }
+                            70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                this.gameContainer.appendChild(popup);
+                
+                // Remove popup after animation
+                setTimeout(() => {
+                    popup.remove();
+                }, 2000);
             }
             toggleSettings() {
                 const panel = document.getElementById('settingsPanel');
