@@ -104,10 +104,13 @@ body {
         }
 
         .difficulty-easy { background: #68d391; color: #000; }
-        .difficulty-medium { background: #f6ad55; color: #000; }
-        .difficulty-hard { background: #f56565; color: #fff; }
-        .difficulty-expert { background: #9f7aea; color: #fff; }
-        .difficulty-legendary { background: #ffd700; color: #000; }
+.difficulty-medium { background: #f6ad55; color: #000; }
+.difficulty-hard { background: #f56565; color: #fff; }
+.difficulty-expert { background: #9f7aea; color: #fff; }
+.difficulty-legendary { background: #ffd700; color: #000; }
+.difficulty-master { background: #e53e3e; color: #fff; }
+.difficulty-grandmaster { background: #1a365d; color: #fff; }
+.difficulty-ultimate { background: #000000; color: #ffd700; }
         .game-container {
             position: relative;
             width: 350px;
@@ -578,75 +581,114 @@ document.addEventListener('visibilitychange', () => {
             }
             
             generateLevelConfigs() {
-                const configs = [];
-                
-                // Levels 1-20: Learning (Easy)
-                for (let i = 1; i <= 20; i++) {
-                    configs.push({
-                        funnelSize: Math.max(60 - i * 2, 35),
-                        obstacles: Math.min(Math.floor(i / 4), 3),
-                        timeLimit: 0,
-                        movingObstacles: 0,
-                        ballSpeed: 1 + (i * 0.02),
-                        difficulty: 'easy',
-                        specialMechanic: null
-                    });
-                }
-                
-                // Levels 21-40: Building Skills (Medium)
-                for (let i = 21; i <= 40; i++) {
-                    configs.push({
-                        funnelSize: Math.max(35 - (i - 20), 25),
-                        obstacles: Math.min(2 + Math.floor((i - 20) / 3), 6),
-                        timeLimit: 0,
-                        movingObstacles: Math.min(Math.floor((i - 25) / 3), 2),
-                        ballSpeed: 1.2 + ((i - 20) * 0.03),
-                        difficulty: 'medium',
-                        specialMechanic: i % 8 === 0 ? 'rotating' : null
-                    });
-                }
-                
-                // Levels 41-60: Advanced (Hard)
-                for (let i = 41; i <= 60; i++) {
-                    configs.push({
-                        funnelSize: Math.max(25 - (i - 40) * 0.5, 18),
-                        obstacles: Math.min(4 + Math.floor((i - 40) / 2), 10),
-                        timeLimit: Math.max(45 - (i - 40), 20),
-                        movingObstacles: Math.min(Math.floor((i - 40) / 3), 4),
-                        ballSpeed: 1.4 + ((i - 40) * 0.04),
-                        difficulty: 'hard',
-                        specialMechanic: ['rotating', 'bouncy', 'shrinking'][Math.floor((i - 40) / 7) % 3]
-                    });
-                }
-                
-                // Levels 61-80: Expert
-                for (let i = 61; i <= 80; i++) {
-                    configs.push({
-                        funnelSize: Math.max(18 - (i - 60) * 0.3, 12),
-                        obstacles: Math.min(6 + Math.floor((i - 60) / 2), 15),
-                        timeLimit: Math.max(30 - (i - 60) * 0.5, 15),
-                        movingObstacles: Math.min(3 + Math.floor((i - 60) / 3), 6),
-                        ballSpeed: 1.6 + ((i - 60) * 0.05),
-                        difficulty: 'expert',
-                        specialMechanic: ['maze', 'spiral', 'teleport'][Math.floor((i - 60) / 7) % 3]
-                    });
-                }
-                
-                // Levels 81-100: Legendary
-                for (let i = 81; i <= 100; i++) {
-                    configs.push({
-                        funnelSize: Math.max(15 - (i - 80) * 0.2, 8),
-                        obstacles: Math.min(10 + Math.floor((i - 80) / 2), 20),
-                        timeLimit: Math.max(25 - (i - 80) * 0.3, 10),
-                        movingObstacles: Math.min(4 + Math.floor((i - 80) / 2), 8),
-                        ballSpeed: 1.8 + ((i - 80) * 0.06),
-                        difficulty: 'legendary',
-                        specialMechanic: ['ultimate', 'chaos', 'precision'][Math.floor((i - 80) / 7) % 3]
-                    });
-                }
-                
-                return configs;
-            }
+    const configs = [];
+    
+    // Levels 1-20: Learning (Easy)
+    for (let i = 1; i <= 20; i++) {
+        configs.push({
+            funnelSize: Math.max(60 - i * 2, 35),
+            obstacles: Math.min(Math.floor(i / 4), 3),
+            timeLimit: 0,
+            movingObstacles: 0,
+            ballSpeed: 1 + (i * 0.02),
+            difficulty: 'easy',
+            specialMechanic: null
+        });
+    }
+    
+    // Levels 21-40: Building Skills (Medium)
+    for (let i = 21; i <= 40; i++) {
+        configs.push({
+            funnelSize: Math.max(35 - (i - 20), 25),
+            obstacles: Math.min(2 + Math.floor((i - 20) / 3), 6),
+            timeLimit: 0,
+            movingObstacles: Math.min(Math.floor((i - 25) / 3), 2),
+            ballSpeed: 1.2 + ((i - 20) * 0.03),
+            difficulty: 'medium',
+            specialMechanic: i % 8 === 0 ? 'rotating' : null
+        });
+    }
+    
+    // Levels 41-60: Advanced (Hard)
+    for (let i = 41; i <= 60; i++) {
+        configs.push({
+            funnelSize: Math.max(25 - (i - 40) * 0.5, 18),
+            obstacles: Math.min(4 + Math.floor((i - 40) / 2), 10),
+            timeLimit: Math.max(45 - (i - 40), 20),
+            movingObstacles: Math.min(Math.floor((i - 40) / 3), 4),
+            ballSpeed: 1.4 + ((i - 40) * 0.04),
+            difficulty: 'hard',
+            specialMechanic: ['rotating', 'bouncy', 'shrinking'][Math.floor((i - 40) / 7) % 3]
+        });
+    }
+    
+    // Levels 61-80: Expert
+    for (let i = 61; i <= 80; i++) {
+        configs.push({
+            funnelSize: Math.max(18 - (i - 60) * 0.3, 12),
+            obstacles: Math.min(6 + Math.floor((i - 60) / 2), 15),
+            timeLimit: Math.max(30 - (i - 60) * 0.5, 15),
+            movingObstacles: Math.min(3 + Math.floor((i - 60) / 3), 6),
+            ballSpeed: 1.6 + ((i - 60) * 0.05),
+            difficulty: 'expert',
+            specialMechanic: ['maze', 'spiral', 'teleport'][Math.floor((i - 60) / 7) % 3]
+        });
+    }
+    
+    // Levels 81-100: Legendary
+    for (let i = 81; i <= 100; i++) {
+        configs.push({
+            funnelSize: Math.max(15 - (i - 80) * 0.2, 8),
+            obstacles: Math.min(10 + Math.floor((i - 80) / 2), 20),
+            timeLimit: Math.max(25 - (i - 80) * 0.3, 10),
+            movingObstacles: Math.min(4 + Math.floor((i - 80) / 2), 8),
+            ballSpeed: 1.8 + ((i - 80) * 0.06),
+            difficulty: 'legendary',
+            specialMechanic: ['ultimate', 'chaos', 'precision'][Math.floor((i - 80) / 7) % 3]
+        });
+    }
+    
+    // Levels 101-150: Master Tier
+    for (let i = 101; i <= 150; i++) {
+        configs.push({
+            funnelSize: Math.max(12 - (i - 100) * 0.1, 8),
+            obstacles: Math.min(12 + Math.floor((i - 100) / 3), 25),
+            timeLimit: Math.max(20 - (i - 100) * 0.2, 8),
+            movingObstacles: Math.min(5 + Math.floor((i - 100) / 4), 10),
+            ballSpeed: 2.0 + ((i - 100) * 0.04),
+            difficulty: 'master',
+            specialMechanic: ['enhanced_rotation', 'double_speed', 'micro_funnel'][Math.floor((i - 100) / 17) % 3]
+        });
+    }
+    
+    // Levels 151-200: Grandmaster Tier
+    for (let i = 151; i <= 200; i++) {
+        configs.push({
+            funnelSize: Math.max(10 - (i - 150) * 0.08, 6),
+            obstacles: Math.min(15 + Math.floor((i - 150) / 2), 30),
+            timeLimit: Math.max(15 - (i - 150) * 0.15, 6),
+            movingObstacles: Math.min(7 + Math.floor((i - 150) / 3), 12),
+            ballSpeed: 2.2 + ((i - 150) * 0.05),
+            difficulty: 'grandmaster',
+            specialMechanic: ['obstacle_maze', 'speed_burst', 'precision_challenge'][Math.floor((i - 150) / 17) % 3]
+        });
+    }
+    
+    // Levels 201-250: Ultimate Tier
+for (let i = 201; i <= 250; i++) {
+    configs.push({
+        funnelSize: Math.max(30 - (i - 200) * 0.1, 25),
+        obstacles: Math.min(18 + Math.floor((i - 200) / 2), 35),
+        timeLimit: Math.max(12 - (i - 200) * 0.1, 5),
+        movingObstacles: Math.min(8 + Math.floor((i - 200) / 3), 15),
+        ballSpeed: 2.5 + ((i - 200) * 0.06),
+        difficulty: 'ultimate',
+        specialMechanic: ['master_challenge', 'ultimate_precision', 'chaos_mode'][Math.floor((i - 200) / 17) % 3]
+    });
+}
+    
+    return configs;
+}
             async requestPermission() {
                 // Show tutorial for first-time users
                 if (!localStorage.getItem('tiltSphereTutorialSeen')) {
@@ -1033,17 +1075,18 @@ if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
                 this.startTimer();
             }
             endGame() {
-                document.getElementById('completeTitle').textContent = 'CONGRATULATIONS!';
-                document.getElementById('levelMessage').innerHTML = 
-                    `You've completed all ${this.levelConfigs.length} levels!<br>
-                    Final Score: ${this.score}<br>
-                    Best Score: ${this.bestScore}<br><br>
-                    You are a TiltSphere Master!`;
-                
-                document.getElementById('levelComplete').style.display = 'block';
-                document.querySelector('#levelComplete button').textContent = 'PLAY AGAIN';
-                document.querySelector('#levelComplete button').onclick = () => this.restart();
-            }
+    document.getElementById('completeTitle').textContent = 'CONGRATULATIONS!';
+    document.getElementById('levelMessage').innerHTML = 
+        `You've completed all ${this.levelConfigs.length} levels!<br>
+        Final Score: ${this.score}<br>
+        Best Score: ${this.bestScore}<br><br>
+        You are a TiltSphere Ultimate Master!<br>
+        <small>Thank you for playing all 250 levels!</small>`;
+    
+    document.getElementById('levelComplete').style.display = 'block';
+    document.querySelector('#levelComplete button').textContent = 'PLAY AGAIN';
+    document.querySelector('#levelComplete button').onclick = () => this.restart();
+}
             
             gameOver() {
                 this.gameRunning = false;
@@ -1376,72 +1419,132 @@ if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
             }
             
             checkAchievements() {
-                const newAchievements = [];
-                
-                // First Win
-                if (this.level === 2 && !this.achievements.includes('first_win')) {
-                    newAchievements.push('first_win');
-                    this.achievements.push('first_win');
-                }
-                
-                // Speed Run (complete level in under 10 seconds)
-                if (this.timeLeft > 20 && !this.achievements.includes('speed_run')) {
-                    newAchievements.push('speed_run');
-                    this.achievements.push('speed_run');
-                }
-                
-                // Level Milestones
-                const milestones = [10, 25, 50, 75, 100];
-                milestones.forEach(milestone => {
-                    const achievementName = `level_${milestone}`;
-                    if (this.level === milestone + 1 && !this.achievements.includes(achievementName)) {
-                        newAchievements.push(achievementName);
-                        this.achievements.push(achievementName);
-                    }
-                });
-                
-                // Score milestones
-                const scoreAchievements = [
-                    { score: 5000, name: 'score_5k' },
-                    { score: 10000, name: 'score_10k' },
-                    { score: 25000, name: 'score_25k' }
-                ];
-                
-                scoreAchievements.forEach(achievement => {
-                    if (this.score >= achievement.score && !this.achievements.includes(achievement.name)) {
-                        newAchievements.push(achievement.name);
-                        this.achievements.push(achievement.name);
-                    }
-                });
-                
-                if (newAchievements.length > 0) {
-                    localStorage.setItem('tiltSphereAchievements', JSON.stringify(this.achievements));
-                    this.updateAchievementDisplay(newAchievements);
-                }
-            }
+    const newAchievements = [];
+    
+    // First Win
+    if (this.level === 2 && !this.achievements.includes('first_win')) {
+        newAchievements.push('first_win');
+        this.achievements.push('first_win');
+    }
+    
+    // Speed Run (complete level in under 10 seconds)
+    if (this.timeLeft > 20 && !this.achievements.includes('speed_run')) {
+        newAchievements.push('speed_run');
+        this.achievements.push('speed_run');
+    }
+    
+    // Level Milestones - Extended
+    const milestones = [10, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250];
+    milestones.forEach(milestone => {
+        const achievementName = `level_${milestone}`;
+        if (this.level === milestone + 1 && !this.achievements.includes(achievementName)) {
+            newAchievements.push(achievementName);
+            this.achievements.push(achievementName);
+        }
+    });
+    
+    // Tier Completion Achievements
+    const tierCompletions = [
+        { level: 21, name: 'tier_easy', title: 'Easy Tier Complete' },
+        { level: 41, name: 'tier_medium', title: 'Medium Tier Complete' },
+        { level: 61, name: 'tier_hard', title: 'Hard Tier Complete' },
+        { level: 81, name: 'tier_expert', title: 'Expert Tier Complete' },
+        { level: 101, name: 'tier_legendary', title: 'Legendary Tier Complete' },
+        { level: 151, name: 'tier_master', title: 'Master Tier Complete' },
+        { level: 201, name: 'tier_grandmaster', title: 'Grandmaster Tier Complete' },
+        { level: 251, name: 'tier_ultimate', title: 'Ultimate Champion' }
+    ];
+    
+    tierCompletions.forEach(tier => {
+        if (this.level === tier.level && !this.achievements.includes(tier.name)) {
+            newAchievements.push(tier.name);
+            this.achievements.push(tier.name);
+        }
+    });
+    
+    // Score milestones - Extended
+    const scoreAchievements = [
+        { score: 5000, name: 'score_5k' },
+        { score: 10000, name: 'score_10k' },
+        { score: 25000, name: 'score_25k' },
+        { score: 50000, name: 'score_50k' },
+        { score: 75000, name: 'score_75k' },
+        { score: 100000, name: 'score_100k' },
+        { score: 150000, name: 'score_150k' }
+    ];
+    
+    scoreAchievements.forEach(achievement => {
+        if (this.score >= achievement.score && !this.achievements.includes(achievement.name)) {
+            newAchievements.push(achievement.name);
+            this.achievements.push(achievement.name);
+        }
+    });
+    
+    // Persistence Achievements
+    if (this.level >= 50 && !this.achievements.includes('persistent')) {
+        newAchievements.push('persistent');
+        this.achievements.push('persistent');
+    }
+    
+    if (this.level >= 100 && !this.achievements.includes('dedicated')) {
+        newAchievements.push('dedicated');
+        this.achievements.push('dedicated');
+    }
+    
+    if (this.level >= 200 && !this.achievements.includes('obsessed')) {
+        newAchievements.push('obsessed');
+        this.achievements.push('obsessed');
+    }
+    
+    if (newAchievements.length > 0) {
+        localStorage.setItem('tiltSphereAchievements', JSON.stringify(this.achievements));
+        this.updateAchievementDisplay(newAchievements);
+    }
+}
             
             updateAchievementDisplay(newAchievements = []) {
-                const achievementNames = {
-                    'first_win': '🎯 First Victory',
-                    'speed_run': '⚡ Speed Demon',
-                    'level_10': '🏆 Level 10 Master',
-                    'level_25': '🏆 Level 25 Champion',
-                    'level_50': '🏆 Level 50 Hero',
-                    'level_75': '🏆 Level 75 Legend',
-                    'level_100': '🏆 TiltSphere Master',
-                    'score_5k': '💎 5K Scorer',
-                    'score_10k': '💎 10K Scorer',
-                    'score_25k': '💎 25K Elite'
-                };
-                
-                if (newAchievements.length > 0) {
-                    const achievementText = newAchievements.map(a => achievementNames[a] || a).join(', ');
-                    document.getElementById('achievements').textContent = `New: ${achievementText}`;
-                    setTimeout(() => {
-                        document.getElementById('achievements').textContent = '';
-                    }, 5000);
-                }
-            }
+    const achievementNames = {
+        'first_win': '🎯 First Victory',
+        'speed_run': '⚡ Speed Demon',
+        'level_10': '🏆 Level 10 Master',
+        'level_25': '🏆 Level 25 Champion',
+        'level_50': '🏆 Level 50 Hero',
+        'level_75': '🏆 Level 75 Legend',
+        'level_100': '🏆 Level 100 Elite',
+        'level_125': '🏆 Level 125 Master',
+        'level_150': '🏆 Level 150 Grandmaster',
+        'level_175': '🏆 Level 175 Supreme',
+        'level_200': '🏆 Level 200 Ultimate',
+        'level_225': '🏆 Level 225 Transcendent',
+        'level_250': '🏆 TiltSphere God',
+        'tier_easy': '🎓 Easy Graduate',
+        'tier_medium': '🎓 Medium Graduate',
+        'tier_hard': '🎓 Hard Graduate',
+        'tier_expert': '🎓 Expert Graduate',
+        'tier_legendary': '🎓 Legendary Graduate',
+        'tier_master': '🎓 Master Graduate',
+        'tier_grandmaster': '🎓 Grandmaster Graduate',
+        'tier_ultimate': '👑 Ultimate Champion',
+        'score_5k': '💎 5K Scorer',
+        'score_10k': '💎 10K Scorer',
+        'score_25k': '💎 25K Elite',
+        'score_50k': '💎 50K Master',
+        'score_75k': '💎 75K Legend',
+        'score_100k': '💎 100K Supreme',
+        'score_150k': '💎 150K Ultimate',
+        'persistent': '🔥 Persistent Player',
+        'dedicated': '🔥 Dedicated Master',
+        'obsessed': '🔥 TiltSphere Obsessed'
+    };
+    
+    if (newAchievements.length > 0) {
+        const achievementText = newAchievements.map(a => achievementNames[a] || a).join(', ');
+        document.getElementById('achievements').textContent = `New: ${achievementText}`;
+        setTimeout(() => {
+            document.getElementById('achievements').textContent = '';
+        }, 5000);
+    }
+}
             
             updateUI() {
                 document.getElementById('level').textContent = this.level;
