@@ -421,17 +421,19 @@
                 const configs = [];
                 
                 // Levels 1-20: Learning (Easy) - Funnel 60px down to 35px minimum
-                for (let i = 1; i <= 20; i++) {
-                    configs.push({
-                        funnelSize: Math.max(60 - i * 1.25, 35),
-                        obstacles: Math.min(Math.floor(i / 4), 3),
-                        timeLimit: 0,
-                        movingObstacles: 0,
-                        ballSpeed: 1 + (i * 0.02),
-                        difficulty: 'easy',
-                        specialMechanic: null
-                    });
-                }
+                // Levels 1-20: Learning (Easy) - Enhanced with better obstacle distribution
+// Levels 1-20: Learning (Easy) - Enhanced with better obstacle distribution
+for (let i = 1; i <= 20; i++) {
+    configs.push({
+        funnelSize: Math.max(60 - i * 2, 35),
+        obstacles: Math.min(2 + Math.floor(i / 3), 6), // Start with 2 obstacles, increase more gradually
+        timeLimit: 0,
+        movingObstacles: 0,
+        ballSpeed: 1 + (i * 0.02),
+        difficulty: 'easy',
+        specialMechanic: null
+    });
+}
                 
                 // Levels 21-40: Building Skills (Medium) - Funnel 35px down to 30px minimum
                 for (let i = 21; i <= 40; i++) {
@@ -573,48 +575,88 @@
             }
             
             createObstacle(isMoving = false, specialMechanic = null) {
-                const obstacle = document.createElement('div');
-                let className = 'obstacle';
-                
-                if (isMoving) {
-                    className += ' moving-obstacle moving';
-                }
-                
-                if (specialMechanic === 'rotating') {
-                    className += ' rotating';
-                }
-                
-                obstacle.className = className;
-                
-                const size = 15 + Math.random() * 20;
-                obstacle.style.width = size + 'px';
-                obstacle.style.height = size + 'px';
-                obstacle.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-                
-                // Position obstacles away from ball start and funnel
-                let x, y;
-                let validPosition = false;
-                let attempts = 0;
-                
-                while (!validPosition && attempts < 50) {
-                    x = Math.random() * (this.containerWidth - size);
-                    y = Math.random() * (this.containerHeight - size);
-                    
-                    const ballDist = Math.sqrt((x - 165) ** 2 + (y - 165) ** 2);
-                    const funnelDist = Math.sqrt((x - this.funnelX) ** 2 + (y - this.funnelY) ** 2);
-                    
-                    if (ballDist > 50 && funnelDist > 60) {
-                        validPosition = true;
-                    }
-                    attempts++;
-                }
-                
-                obstacle.style.left = x + 'px';
-                obstacle.style.top = y + 'px';
-                
-                this.gameContainer.appendChild(obstacle);
-                this.obstacles.push({ element: obstacle, x, y, width: size, height: size, isMoving });
+    const obstacle = document.createElement('div');
+    obstacle.className = 'obstacle';
+    
+    const size = 20 + Math.random() * 15; // 20-35px obstacles
+    obstacle.style.width = size + 'px';
+    obstacle.style.height = size + 'px';
+    
+    // Strategic positioning based on ball-to-funnel path
+    let x, y;
+    let attempts = 0;
+    let validPosition = false;
+    
+    while (!validPosition && attempts < 100) {
+        // Calculate the direct path from ball (165, 165) to funnel center
+        const ballX = 165;
+        const ballY = 165;
+        const funnelCenterX = this.funnelX + this.getCurrentConfig().funnelSize / 2;
+        const funnelCenterY = this.funnelY + this.getCurrentConfig().funnelSize / 2;
+        
+        // Create obstacles along or near the path between ball and funnel
+        const pathProgress = Math.random(); // 0 to 1 along the path
+        const pathVariation = (Math.random() - 0.5) * 120; // Up to 60px deviation from direct path
+        
+        // Calculate position along the path with some variation
+        const directX = ballX + (funnelCenterX - ballX) * pathProgress;
+        const directY = ballY + (funnelCenterY - ballY) * pathProgress;
+        
+        // Add perpendicular variation to create interesting paths
+        const pathAngle = Math.atan2(funnelCenterY - ballY, funnelCenterX - ballX);
+        const perpAngle = pathAngle + Math.PI / 2;
+        
+        x = directX + Math.cos(perpAngle) * pathVariation;
+        y = directY + Math.sin(perpAngle) * pathVariation;
+        
+        // Ensure obstacle stays within bounds
+        x = Math.max(20, Math.min(x, this.containerWidth - size - 20));
+        y = Math.max(20, Math.min(y, this.containerHeight - size - 20));
+        
+        // Check distance from ball spawn (must be at least 40px away)
+        const distanceFromBall = Math.sqrt((x - ballX) ** 2 + (y - ballY) ** 2);
+        
+        // Check distance from funnel (must be at least 30px away from funnel edge)
+        const distanceFromFunnel = Math.sqrt(
+            (x - funnelCenterX) ** 2 + (y - funnelCenterY) ** 2
+        ) - this.getCurrentConfig().funnelSize / 2;
+        
+        // Check distance from other obstacles (must be at least 25px apart)
+        let tooCloseToOtherObstacles = false;
+        this.obstacles.forEach(otherObstacle => {
+            const otherRect = otherObstacle.element.getBoundingClientRect();
+            const containerRect = this.gameContainer.getBoundingClientRect();
+            const otherX = otherRect.left - containerRect.left;
+            const otherY = otherRect.top - containerRect.top;
+            
+            const distance = Math.sqrt((x - otherX) ** 2 + (y - otherY) ** 2);
+            if (distance < 25) {
+                tooCloseToOtherObstacles = true;
             }
+        });
+        
+        if (distanceFromBall >= 40 && 
+            distanceFromFunnel >= 30 && 
+            !tooCloseToOtherObstacles) {
+            validPosition = true;
+        }
+        
+        attempts++;
+    }
+    
+    // If we can't find a strategic position, fall back to safer random placement
+    if (!validPosition) {
+        const margin = 30;
+        x = margin + Math.random() * (this.containerWidth - 2 * margin - size);
+        y = margin + Math.random() * (this.containerHeight - 2 * margin - size);
+    }
+    
+    obstacle.style.left = x + 'px';
+    obstacle.style.top = y + 'px';
+    
+    this.gameContainer.appendChild(obstacle);
+    this.obstacles.push({ element: obstacle, x, y, width: size, height: size, isMoving });
+}
             
             clearObstacles() {
                 this.obstacles.forEach(obs => obs.element.remove());
