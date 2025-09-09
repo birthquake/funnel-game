@@ -546,11 +546,11 @@ body {
                 }
                 
                 this.levelConfigs = this.generateLevelConfigs();
-                
-                this.setupLevel();
-                this.updateUI();
-                this.loadGame();
-                this.applySettings();
+
+this.loadGame();        // Load first, THEN setup
+this.setupLevel();
+this.updateUI();
+this.applySettings();
                 
                 this.startButton.addEventListener('click', () => this.requestPermission());
                 
