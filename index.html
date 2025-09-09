@@ -546,11 +546,11 @@ body {
                 }
                 
                 this.levelConfigs = this.generateLevelConfigs();
-
-this.loadGame();        // Load first, THEN setup
-this.setupLevel();
-this.updateUI();
-this.applySettings();
+                
+                this.setupLevel();
+                this.updateUI();
+                this.loadGame();
+                this.applySettings();
                 
                 this.startButton.addEventListener('click', () => this.requestPermission());
                 
@@ -817,28 +817,12 @@ document.addEventListener('visibilitychange', () => {
                 this.funnel.style.width = config.funnelSize + 'px';
                 this.funnel.style.height = config.funnelSize + 'px';
                 
-                // Ensure funnel spawns far from ball center (165, 165)
-const minDistanceFromBall = 120; // Minimum distance from ball
-const margin = Math.max(config.funnelSize + 20, 30);
-let attempts = 0;
-let validFunnelPosition = false;
-
-while (!validFunnelPosition && attempts < 100) {
-    this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - config.funnelSize);
-    this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - config.funnelSize);
-    
-    const funnelCenterX = this.funnelX + config.funnelSize / 2;
-    const funnelCenterY = this.funnelY + config.funnelSize / 2;
-    const distanceFromBall = Math.sqrt((funnelCenterX - 165) ** 2 + (funnelCenterY - 165) ** 2);
-    
-    if (distanceFromBall >= minDistanceFromBall) {
-        validFunnelPosition = true;
-    }
-    attempts++;
-}
-
-this.funnel.style.left = this.funnelX + 'px';
-this.funnel.style.top = this.funnelY + 'px';
+                const margin = config.funnelSize + 20;
+                this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - config.funnelSize);
+                this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - config.funnelSize);
+                
+                this.funnel.style.left = this.funnelX + 'px';
+                this.funnel.style.top = this.funnelY + 'px';
                 
                 // Add obstacles with special mechanics
                 this.addObstacles(config.obstacles, config.movingObstacles, config.specialMechanic);
@@ -1036,43 +1020,60 @@ if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
                     this.levelComplete();
                 }
             }
-       levelComplete() {
-    console.log(`BEFORE increment: level = ${this.level}`);
-    
-    // Stop ALL other processes
-    if (this.timerInterval) {
-        clearInterval(this.timerInterval);
-    }
-    
-    // Just increment level - nothing else
-    this.level++;
-    console.log(`AFTER increment: level = ${this.level}`);
-    
-    // Basic score (no bonuses)
-    this.score += 100;
-    
-    // Update UI immediately
-    this.updateUI();
-    
-    // Simple delay then next level
-    setTimeout(() => {
-        console.log(`About to call nextLevel, current level: ${this.level}`);
-        this.nextLevel();
-    }, 1000);
-}
+        levelComplete() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                const levelBonus = this.level * 100;
+                const timeBonus = this.timeLeft * 10;
+                const totalBonus = levelBonus + timeBonus;
+                
+                this.score += totalBonus;
+                
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    localStorage.setItem('tiltSphereBest', this.bestScore.toString());
+                }
+                
+                // Auto-save progress after completing a level
+                this.saveGame();
+                
+                // Enhanced visual feedback
+                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#68d391', 20);
+                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#ffd700', 12);
+                
+                this.gameContainer.classList.add('pulse');
+                setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
+                
+                this.playSound('success');
+                this.hapticFeedback(200);
+                
+                this.checkAchievements();
+                
+                // Show floating score popup
+                this.showScorePopup(levelBonus, timeBonus, totalBonus);
+                
+                // Auto-advance to next level after brief delay
+                setTimeout(() => {
+                    this.nextLevel();
+                }, 1500);
+                
+                this.updateUI();
+            }
             
             nextLevel() {
-    console.log(`nextLevel called with level: ${this.level}`);
-    
-    if (this.level > this.levelConfigs.length) {
-        this.endGame();
-        return;
-    }
-    
-    this.setupLevel();
-    this.updateUI();
-    console.log(`nextLevel complete, final level: ${this.level}`);
-}
+                this.level++;
+                
+                if (this.level > this.levelConfigs.length) {
+                    this.endGame();
+                    return;
+                }
+                
+                this.setupLevel();
+                this.updateUI();
+                this.startTimer();
+            }
             endGame() {
     document.getElementById('completeTitle').textContent = 'CONGRATULATIONS!';
     document.getElementById('levelMessage').innerHTML = 
@@ -1380,23 +1381,24 @@ if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
             }
             
             loadGame() {
-    const saveData = localStorage.getItem('tiltSphereSave');
-    if (saveData) {
-        try {
-            const data = JSON.parse(saveData);
-            this.level = data.level || 1;
-            this.score = data.score || 0;
-            this.achievements = data.achievements || [];
-            
-            const saveTime = new Date(data.timestamp).toLocaleString();
-            document.getElementById('saveStatus').textContent = `Loaded save from: ${saveTime}`;
-            
-            // Removed setupLevel() and updateUI() - let constructor handle this
-        } catch (error) {
-            console.error('Failed to load save data:', error);
-        }
-    }
-}
+                const saveData = localStorage.getItem('tiltSphereSave');
+                if (saveData) {
+                    try {
+                        const data = JSON.parse(saveData);
+                        this.level = data.level || 1;
+                        this.score = data.score || 0;
+                        this.achievements = data.achievements || [];
+                        
+                        const saveTime = new Date(data.timestamp).toLocaleString();
+                        document.getElementById('saveStatus').textContent = `Loaded save from: ${saveTime}`;
+                        
+                        this.setupLevel();
+                        this.updateUI();
+                    } catch (error) {
+                        console.error('Failed to load save data:', error);
+                    }
+                }
+            }
             
             resetProgress() {
                 if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
