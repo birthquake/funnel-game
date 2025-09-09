@@ -1397,24 +1397,23 @@ if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
             }
             
             loadGame() {
-                const saveData = localStorage.getItem('tiltSphereSave');
-                if (saveData) {
-                    try {
-                        const data = JSON.parse(saveData);
-                        this.level = data.level || 1;
-                        this.score = data.score || 0;
-                        this.achievements = data.achievements || [];
-                        
-                        const saveTime = new Date(data.timestamp).toLocaleString();
-                        document.getElementById('saveStatus').textContent = `Loaded save from: ${saveTime}`;
-                        
-                        this.setupLevel();
-                        this.updateUI();
-                    } catch (error) {
-                        console.error('Failed to load save data:', error);
-                    }
-                }
-            }
+    const saveData = localStorage.getItem('tiltSphereSave');
+    if (saveData) {
+        try {
+            const data = JSON.parse(saveData);
+            this.level = data.level || 1;
+            this.score = data.score || 0;
+            this.achievements = data.achievements || [];
+            
+            const saveTime = new Date(data.timestamp).toLocaleString();
+            document.getElementById('saveStatus').textContent = `Loaded save from: ${saveTime}`;
+            
+            // Removed setupLevel() and updateUI() calls - let constructor handle this
+        } catch (error) {
+            console.error('Failed to load save data:', error);
+        }
+    }
+}
             
             resetProgress() {
                 if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
