@@ -1037,46 +1037,46 @@ if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
                 }
             }
         levelComplete() {
-                if (this.timerInterval) {
-                    clearInterval(this.timerInterval);
-                }
-                
-                const levelBonus = this.level * 100;
-                const timeBonus = this.timeLeft * 10;
-                const totalBonus = levelBonus + timeBonus;
-                
-                this.score += totalBonus;
-                
-                if (this.score > this.bestScore) {
-                    this.bestScore = this.score;
-                    localStorage.setItem('tiltSphereBest', this.bestScore.toString());
-                }
-                
-                // Auto-save progress after completing a level
-                this.saveGame();
-                
-                // Enhanced visual feedback
-                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#68d391', 20);
-                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#ffd700', 12);
-                
-                this.gameContainer.classList.add('pulse');
-                setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
-                
-                this.playSound('success');
-                this.hapticFeedback(200);
-                
-                this.checkAchievements();
-                
-                // Show floating score popup
-                this.showScorePopup(levelBonus, timeBonus, totalBonus);
-                
-                // Auto-advance to next level after brief delay
-                setTimeout(() => {
-                    this.nextLevel();
-                }, 1500);
-                
-                this.updateUI();
-            }
+    if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+    }
+    
+    const levelBonus = this.level * 100;
+    const timeBonus = this.timeLeft * 10;
+    const totalBonus = levelBonus + timeBonus;
+    
+    this.score += totalBonus;
+    
+    if (this.score > this.bestScore) {
+        this.bestScore = this.score;
+        localStorage.setItem('tiltSphereBest', this.bestScore.toString());
+    }
+    
+    this.saveGame();
+    
+    // Enhanced visual feedback
+    this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#68d391', 20);
+    this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#ffd700', 12);
+    
+    this.gameContainer.classList.add('pulse');
+    setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
+    
+    this.playSound('success');
+    this.hapticFeedback(200);
+    
+    // TEMPORARILY COMMENT OUT ACHIEVEMENTS
+    // this.checkAchievements();
+    
+    // Show floating score popup
+    this.showScorePopup(levelBonus, timeBonus, totalBonus);
+    
+    // Auto-advance to next level after brief delay
+    setTimeout(() => {
+        this.nextLevel();
+    }, 1500);
+    
+    this.updateUI();
+}
             
             nextLevel() {
                 this.level++;
