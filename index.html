@@ -1408,7 +1408,7 @@ if (Math.abs(this.ballVelX) > 5 || Math.abs(this.ballVelY) > 5) {
             const saveTime = new Date(data.timestamp).toLocaleString();
             document.getElementById('saveStatus').textContent = `Loaded save from: ${saveTime}`;
             
-            // Removed setupLevel() and updateUI() calls - let constructor handle this
+            // Removed setupLevel() and updateUI() - let constructor handle this
         } catch (error) {
             console.error('Failed to load save data:', error);
         }
