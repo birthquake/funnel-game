@@ -345,14 +345,53 @@
 
     <div class="controls">
         <button class="start-button" id="startButton">START GAME</button>
-        <div class="menu-buttons" id="menuButtons" style="display: none;">
-            <button class="menu-button" onclick="game.pauseGame()">Pause</button>
-            <button class="menu-button" onclick="game.saveGame()">Save</button>
-            <button class="menu-button" onclick="game.resetProgress()">Reset</button>
-        </div>
+       <div class="menu-buttons" id="menuButtons" style="display: none;">
+    <button class="menu-button" onclick="game.pauseGame()">Pause</button>
+    <button class="menu-button" onclick="game.saveGame()">Save</button>
+    <button class="menu-button" onclick="game.showSettings()">Settings</button>
+    <button class="menu-button" onclick="game.resetProgress()">Reset</button>
+</div>
         
         <div>Tilt your device to guide the ball into the target</div>
         <div style="margin-top: 5px; font-size: 10px;" id="saveStatus"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(135deg, #1a202c, #2d3748); border: 2px solid #63b3ed; border-radius: 15px; padding: 20px; width: 90%; max-width: 300px; color: white;">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #63b3ed;">Settings</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">Sensitivity: <span id="sensitivityValue">50</span>%</label>
+                <input type="range" id="sensitivitySlider" min="10" max="100" value="50" style="width: 100%;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="soundToggle" checked>
+                    <span>Sound Effects</span>
+                </label>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="hapticToggle" checked>
+                    <span>Haptic Feedback</span>
+                </label>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="trailToggle" checked>
+                    <span>Ball Trail</span>
+                </label>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="game.saveSettings()" style="background: #68d391; color: black; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Save</button>
+                <button onclick="game.closeSettings()" style="background: #f56565; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1057,63 +1096,104 @@ for (let i = 1; i <= 20; i++) {
             }
             
             checkAchievements() {
-                const newAchievements = [];
+    const newAchievements = [];
+    
+    // First Win
+    if (this.level === 2 && !this.achievements.includes('first_win')) {
+        newAchievements.push('first_win');
+        this.achievements.push('first_win');
+    }
+    
+    // Level Milestones
+    const milestones = [10, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250];
+    milestones.forEach(milestone => {
+        const achievementName = `level_${milestone}`;
+        if (this.level === milestone + 1 && !this.achievements.includes(achievementName)) {
+            newAchievements.push(achievementName);
+            this.achievements.push(achievementName);
+        }
+    });
+    
+    // Tier Completion Achievements
+    const tierCompletions = [
+        { level: 21, name: 'tier_easy' },
+        { level: 41, name: 'tier_medium' },
+        { level: 61, name: 'tier_hard' },
+        { level: 81, name: 'tier_expert' },
+        { level: 101, name: 'tier_legendary' },
+        { level: 151, name: 'tier_master' },
+        { level: 201, name: 'tier_grandmaster' },
+        { level: 251, name: 'tier_ultimate' }
+    ];
+    
+    tierCompletions.forEach(tier => {
+        if (this.level === tier.level && !this.achievements.includes(tier.name)) {
+            newAchievements.push(tier.name);
+            this.achievements.push(tier.name);
+        }
+    });
+    
+    // Score milestones
+    const scoreAchievements = [
+        { score: 5000, name: 'score_5k' },
+        { score: 10000, name: 'score_10k' },
+        { score: 25000, name: 'score_25k' },
+        { score: 50000, name: 'score_50k' },
+        { score: 100000, name: 'score_100k' }
+    ];
+    
+    scoreAchievements.forEach(achievement => {
+        if (this.score >= achievement.score && !this.achievements.includes(achievement.name)) {
+            newAchievements.push(achievement.name);
+            this.achievements.push(achievement.name);
+        }
+    });
+    
+    if (newAchievements.length > 0) {
+        localStorage.setItem('tiltSphereAchievements', JSON.stringify(this.achievements));
+        // Could show achievement notification here
+    }
+}
+            
+            showSettings() {
+                // Update UI with current settings
+                document.getElementById('sensitivitySlider').value = this.settings.sensitivity;
+                document.getElementById('sensitivityValue').textContent = this.settings.sensitivity;
+                document.getElementById('soundToggle').checked = this.settings.sound;
+                document.getElementById('hapticToggle').checked = this.settings.haptic;
+                document.getElementById('trailToggle').checked = this.settings.trail;
                 
-                // First Win
-                if (this.level === 2 && !this.achievements.includes('first_win')) {
-                    newAchievements.push('first_win');
-                    this.achievements.push('first_win');
-                }
+                // Add slider event listener
+                const slider = document.getElementById('sensitivitySlider');
+                slider.oninput = () => {
+                    document.getElementById('sensitivityValue').textContent = slider.value;
+                };
                 
-                // Level Milestones
-                const milestones = [10, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250];
-                milestones.forEach(milestone => {
-                    const achievementName = `level_${milestone}`;
-                    if (this.level === milestone + 1 && !this.achievements.includes(achievementName)) {
-                        newAchievements.push(achievementName);
-                        this.achievements.push(achievementName);
-                    }
-                });
+                document.getElementById('settingsModal').style.display = 'flex';
+            }
+            
+            closeSettings() {
+                document.getElementById('settingsModal').style.display = 'none';
+            }
+            
+            saveSettings() {
+                // Get values from UI
+                this.settings.sensitivity = parseInt(document.getElementById('sensitivitySlider').value);
+                this.settings.sound = document.getElementById('soundToggle').checked;
+                this.settings.haptic = document.getElementById('hapticToggle').checked;
+                this.settings.trail = document.getElementById('trailToggle').checked;
                 
-                // Tier Completion Achievements
-                const tierCompletions = [
-                    { level: 21, name: 'tier_easy' },
-                    { level: 41, name: 'tier_medium' },
-                    { level: 61, name: 'tier_hard' },
-                    { level: 81, name: 'tier_expert' },
-                    { level: 101, name: 'tier_legendary' },
-                    { level: 151, name: 'tier_master' },
-                    { level: 201, name: 'tier_grandmaster' },
-                    { level: 251, name: 'tier_ultimate' }
-                ];
+                // Save to localStorage
+                localStorage.setItem('tiltSphereSettings', JSON.stringify(this.settings));
                 
-                tierCompletions.forEach(tier => {
-                    if (this.level === tier.level && !this.achievements.includes(tier.name)) {
-                        newAchievements.push(tier.name);
-                        this.achievements.push(tier.name);
-                    }
-                });
+                // Close modal
+                this.closeSettings();
                 
-                // Score milestones
-                const scoreAchievements = [
-                    { score: 5000, name: 'score_5k' },
-                    { score: 10000, name: 'score_10k' },
-                    { score: 25000, name: 'score_25k' },
-                    { score: 50000, name: 'score_50k' },
-                    { score: 100000, name: 'score_100k' }
-                ];
-                
-                scoreAchievements.forEach(achievement => {
-                    if (this.score >= achievement.score && !this.achievements.includes(achievement.name)) {
-                        newAchievements.push(achievement.name);
-                        this.achievements.push(achievement.name);
-                    }
-                });
-                
-                if (newAchievements.length > 0) {
-                    localStorage.setItem('tiltSphereAchievements', JSON.stringify(this.achievements));
-                    // Could show achievement notification here
-                }
+                // Show confirmation
+                document.getElementById('saveStatus').textContent = 'Settings saved!';
+                setTimeout(() => {
+                    document.getElementById('saveStatus').textContent = document.getElementById('saveStatus').textContent.replace('Settings saved!', '').trim();
+                }, 3000);
             }
         }
         
