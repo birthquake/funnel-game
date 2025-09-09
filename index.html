@@ -559,31 +559,39 @@ for (let i = 1; i <= 20; i++) {
                 this.funnel.style.height = funnelSize + 'px';
                 
                 // Strategic funnel positioning - ensure 120px minimum distance from ball center
-                const minDistanceFromBall = 120;
-                const margin = Math.max(funnelSize + 20, 30);
-                let attempts = 0;
-                let validFunnelPosition = false;
+                // Strategic funnel positioning - ensure 120px minimum distance from ball center
+const minDistanceFromBall = 120;
+const margin = Math.max(funnelSize + 20, 30);
+let attempts = 0;
+let validFunnelPosition = false;
 
-                while (!validFunnelPosition && attempts < 100) {
-                    this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - funnelSize);
-                    this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - funnelSize);
-                    
-                    const funnelCenterX = this.funnelX + funnelSize / 2;
-                    const funnelCenterY = this.funnelY + funnelSize / 2;
-                    const distanceFromBall = Math.sqrt((funnelCenterX - 165) ** 2 + (funnelCenterY - 165) ** 2);
-                    
-                    if (distanceFromBall >= minDistanceFromBall) {
-                        validFunnelPosition = true;
-                    }
-                    attempts++;
-                }
+while (!validFunnelPosition && attempts < 50) {
+    this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - funnelSize);
+    this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - funnelSize);
+    
+    const funnelCenterX = this.funnelX + funnelSize / 2;
+    const funnelCenterY = this.funnelY + funnelSize / 2;
+    const distanceFromBall = Math.sqrt((funnelCenterX - 165) ** 2 + (funnelCenterY - 165) ** 2);
+    
+    if (distanceFromBall >= minDistanceFromBall) {
+        validFunnelPosition = true;
+    }
+    attempts++;
+}
 
-                // Fallback position if we couldn't find a good spot
-                if (!validFunnelPosition) {
-                    this.funnelX = this.containerWidth - funnelSize - 40;
-                    this.funnelY = 40;
-                }
-
+// Improved fallback - multiple fallback positions instead of always the same spot
+if (!validFunnelPosition) {
+    const fallbackPositions = [
+        { x: this.containerWidth - funnelSize - 40, y: 40 }, // top-right
+        { x: 40, y: this.containerHeight - funnelSize - 40 }, // bottom-left
+        { x: this.containerWidth - funnelSize - 40, y: this.containerHeight - funnelSize - 40 }, // bottom-right
+        { x: 40, y: 40 } // top-left
+    ];
+    
+    const randomFallback = fallbackPositions[Math.floor(Math.random() * fallbackPositions.length)];
+    this.funnelX = randomFallback.x;
+    this.funnelY = randomFallback.y;
+}
                 this.funnel.style.left = this.funnelX + 'px';
                 this.funnel.style.top = this.funnelY + 'px';
                 
