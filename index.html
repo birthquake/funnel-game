@@ -817,12 +817,28 @@ document.addEventListener('visibilitychange', () => {
                 this.funnel.style.width = config.funnelSize + 'px';
                 this.funnel.style.height = config.funnelSize + 'px';
                 
-                const margin = config.funnelSize + 20;
-                this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - config.funnelSize);
-                this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - config.funnelSize);
-                
-                this.funnel.style.left = this.funnelX + 'px';
-                this.funnel.style.top = this.funnelY + 'px';
+                // Ensure funnel spawns far from ball center (165, 165)
+const minDistanceFromBall = 120; // Minimum distance from ball
+const margin = Math.max(config.funnelSize + 20, 30);
+let attempts = 0;
+let validFunnelPosition = false;
+
+while (!validFunnelPosition && attempts < 100) {
+    this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - config.funnelSize);
+    this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - config.funnelSize);
+    
+    const funnelCenterX = this.funnelX + config.funnelSize / 2;
+    const funnelCenterY = this.funnelY + config.funnelSize / 2;
+    const distanceFromBall = Math.sqrt((funnelCenterX - 165) ** 2 + (funnelCenterY - 165) ** 2);
+    
+    if (distanceFromBall >= minDistanceFromBall) {
+        validFunnelPosition = true;
+    }
+    attempts++;
+}
+
+this.funnel.style.left = this.funnelX + 'px';
+this.funnel.style.top = this.funnelY + 'px';
                 
                 // Add obstacles with special mechanics
                 this.addObstacles(config.obstacles, config.movingObstacles, config.specialMechanic);
