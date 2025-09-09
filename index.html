@@ -414,41 +414,38 @@
                 }
             }
             levelComplete() {
-                this.log(`LEVEL COMPLETE: Level ${this.level} finished!`);
-                
-                // Add visual feedback
-                this.gameContainer.classList.add('pulse');
-                setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
-                
-                // Add score
-                this.score += 100;
-                
-                // Critical debug logging for level progression
-                console.log(`=== LEVEL PROGRESSION DEBUG ===`);
-                console.log(`Current level BEFORE increment: ${this.level}`);
-                
-                // Advance to next level
-                this.level++;
-                
-                console.log(`Current level AFTER increment: ${this.level}`);
-                console.log(`Total levels available: ${this.levelConfigs.length}`);
-                console.log(`=== END DEBUG ===`);
-                
-                // Check if game complete
-                if (this.level > this.levelConfigs.length) {
-                    this.gameComplete();
-                    return;
-                }
-                
-                // Update UI and setup next level
-                this.updateUI();
-                
-                // Brief pause then setup next level
-                setTimeout(() => {
-                    this.log(`Advancing to level ${this.level}`);
-                    this.setupLevel();
-                }, 1000);
-            }
+    // Prevent multiple calls
+    if (this.levelCompleting) return;
+    this.levelCompleting = true;
+    
+    this.log(`LEVEL COMPLETE: Level ${this.level} finished!`);
+    
+    // Add visual feedback
+    this.gameContainer.classList.add('pulse');
+    setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
+    
+    // Add score
+    this.score += 100;
+    
+    // Advance to next level
+    this.level++;
+    
+    // Check if game complete
+    if (this.level > this.levelConfigs.length) {
+        this.gameComplete();
+        return;
+    }
+    
+    // Update UI and setup next level
+    this.updateUI();
+    
+    // Brief pause then setup next level
+    setTimeout(() => {
+        this.log(`Advancing to level ${this.level}`);
+        this.setupLevel();
+        this.levelCompleting = false; // Reset flag
+    }, 1000);
+}
             
             gameComplete() {
                 this.log('GAME COMPLETE! All levels finished!');
