@@ -200,7 +200,7 @@
                 0 0 20px rgba(245, 101, 101, 0.8),
                 inset -3px -3px 8px rgba(0, 0, 0, 0.4),
                 inset 2px 2px 4px rgba(255, 255, 255, 0.3);
-            transition: none;
+                transition: transform 0.1s ease-out, opacity 0.1s ease-out;            
             z-index: 10;
             left: 165px;
             top: 165px;
@@ -726,6 +726,77 @@
                 // this.emergencyCenter.classList.remove('show');
                 this.stuckTimer = 0;
             }
+            animateBallIntoFunnel(callback) {
+    // Disable game physics during animation
+    this.ballVelX = 0;
+    this.ballVelY = 0;
+    
+    const config = this.getCurrentConfig();
+    const funnelSize = Math.max(config.funnelSize, 30);
+    const funnelCenterX = this.funnelX + funnelSize / 2;
+    const funnelCenterY = this.funnelY + funnelSize / 2;
+    
+    // Animation parameters
+    const startTime = Date.now();
+    const duration = 1200; // 1.2 seconds
+    const initialRadius = Math.sqrt(
+        (this.ballX + this.ballSize/2 - funnelCenterX) ** 2 + 
+        (this.ballY + this.ballSize/2 - funnelCenterY) ** 2
+    );
+    
+    const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        if (progress >= 1) {
+            // Animation complete
+            this.ball.style.transform = 'scale(0.1)';
+            this.ball.style.opacity = '0.2';
+            setTimeout(() => {
+                this.ball.style.transform = 'scale(1)';
+                this.ball.style.opacity = '1';
+                callback();
+            }, 200);
+            return;
+        }
+        
+        // Easing function for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        // Calculate spiral position
+        const radius = initialRadius * (1 - easeOut);
+        const angle = progress * Math.PI * 6; // 3 full rotations
+        const scale = 1 - (progress * 0.7); // Shrink to 30% size
+        
+        // Position ball in spiral
+        const spiralX = funnelCenterX + Math.cos(angle) * radius - this.ballSize/2;
+        const spiralY = funnelCenterY + Math.sin(angle) * radius - this.ballSize/2;
+        
+        this.ballX = spiralX;
+        this.ballY = spiralY;
+        
+        // Update visual position and scale
+        this.ball.style.left = this.ballX + 'px';
+        this.ball.style.top = this.ballY + 'px';
+        this.ball.style.transform = `scale(${scale})`;
+        this.ball.style.opacity = scale; // Fade as it shrinks
+        
+        // Create spiral trail particles
+        if (Math.random() < 0.3) {
+            this.createParticles(
+                this.ballX + this.ballSize/2, 
+                this.ballY + this.ballSize/2, 
+                '#4fd1c7', 
+                2
+            );
+        }
+        
+        requestAnimationFrame(animate);
+    };
+    
+    animate();
+}
+            
             generateLevelConfigs() {
                 const configs = [];
                 
@@ -1346,16 +1417,16 @@
                 }
                 
                 // Auto-save progress
-                this.saveGame();
-                
-                // Update UI
-                this.updateUI();
-                
-                // Setup next level after brief delay
-                setTimeout(() => {
-                    this.setupLevel();
-                    this.levelCompleting = false;
-                }, 1000);
+this.saveGame();
+
+// Update UI
+this.updateUI();
+
+// Animate ball into funnel, then setup next level
+this.animateBallIntoFunnel(() => {
+    this.setupLevel();
+    this.levelCompleting = false;
+});
             }
             endGame() {
                 this.gameRunning = false;
