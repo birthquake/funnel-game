@@ -434,28 +434,30 @@
         }
 
         /* Emergency center button */
-        .emergency-center {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(245, 101, 101, 0.2);
-            border: 1px solid #f56565;
-            color: #f56565;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 10px;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
+/*
+.emergency-center {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(245, 101, 101, 0.2);
+    border: 1px solid #f56565;
+    color: #f56565;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
 
-        .emergency-center.show {
-            opacity: 1;
-        }
+.emergency-center.show {
+    opacity: 1;
+}
 
-        .emergency-center:hover {
-            background: rgba(245, 101, 101, 0.4);
-        }
+.emergency-center:hover {
+    background: rgba(245, 101, 101, 0.4);
+}
+*/
 
         /* Collision feedback styles */
         .collision-wall {
@@ -513,8 +515,7 @@
         <div class="ball" id="ball"></div>
         <div class="funnel" id="funnel"></div>
         <div class="save-indicator" id="saveIndicator">Progress Saved!</div>
-        <div class="emergency-center" id="emergencyCenter">Double-tap to center ball</div>
-        
+<!-- <div class="emergency-center" id="emergencyCenter">Double-tap to center ball</div> -->        
         <!-- Paused Overlay -->
         <div class="paused-overlay" id="pausedOverlay">
             <div class="paused-content">
@@ -660,7 +661,7 @@
                 this.setupAutoPause();
                 
                 // NEW: Emergency center functionality
-                this.setupEmergencyCenter();
+                // this.setupEmergencyCenter();
             }
             
             setupEventListeners() {
@@ -722,7 +723,7 @@
                 setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
                 
                 // Hide emergency button temporarily
-                this.emergencyCenter.classList.remove('show');
+                // this.emergencyCenter.classList.remove('show');
                 this.stuckTimer = 0;
             }
             generateLevelConfigs() {
@@ -813,7 +814,7 @@
             }
             setupLevel() {
                 // NEW: Show level preview
-                this.showLevelPreview();
+                // this.showLevelPreview();
                 
                 // Clear any existing obstacles and particles
                 this.clearObstacles();
@@ -877,7 +878,7 @@
                 // Reset level attempt tracking
                 this.levelAttempts = 0;
                 this.stuckTimer = 0;
-                this.emergencyCenter.classList.remove('show');
+                // this.emergencyCenter.classList.remove('show');
                 document.getElementById('skipLevelHint').classList.remove('show');
                 document.getElementById('skipButton').style.display = 'none';
                 
@@ -1120,11 +1121,11 @@
                 if (distanceMoved < 0.5) {
                     this.stuckTimer++;
                     if (this.stuckTimer > 300) { // 5 seconds at 60fps
-                        this.emergencyCenter.classList.add('show');
+                        // this.emergencyCenter.classList.add('show');
                     }
                 } else {
                     this.stuckTimer = 0;
-                    this.emergencyCenter.classList.remove('show');
+                    // this.emergencyCenter.classList.remove('show');
                 }
                 
                 this.lastBallPosition = { ...currentPosition };
@@ -1439,7 +1440,7 @@
                     // Hide skip elements
                     document.getElementById('skipLevelHint').classList.remove('show');
                     document.getElementById('skipButton').style.display = 'none';
-                    this.emergencyCenter.classList.remove('show');
+                    // this.emergencyCenter.classList.remove('show');
                     
                     this.setupLevel();
                     this.updateUI();
