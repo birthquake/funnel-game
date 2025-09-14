@@ -662,10 +662,10 @@ if (!validFunnelPosition) {
         // Check distance from ball spawn (must be at least 40px away)
         const distanceFromBall = Math.sqrt((x - ballX) ** 2 + (y - ballY) ** 2);
         
-        // Check distance from funnel (must be at least 30px away from funnel edge)
-        const distanceFromFunnel = Math.sqrt(
-            (x - funnelCenterX) ** 2 + (y - funnelCenterY) ** 2
-        ) - this.getCurrentConfig().funnelSize / 2;
+        // Check distance from funnel (obstacle edge to funnel edge)
+const obstacleToFunnelDistance = Math.sqrt(
+    (x + size/2 - funnelCenterX) ** 2 + (y + size/2 - funnelCenterY) ** 2
+) - this.getCurrentConfig().funnelSize / 2 - size / 2;
         
         // Check distance from other obstacles (must be at least 25px apart)
         let tooCloseToOtherObstacles = false;
