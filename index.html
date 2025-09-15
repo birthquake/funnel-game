@@ -1043,8 +1043,27 @@
                         }
                     });
                     
-                    if (distanceFromBall >= 50 && 
-    distanceFromFunnel >= 30 && 
+ // More stringent funnel clearance - check all four corners of obstacle
+const currentFunnelSize = this.getCurrentConfig().funnelSize;
+const obstacleCorners = [
+    { x: x, y: y },                           // top-left
+    { x: x + size, y: y },                    // top-right  
+    { x: x, y: y + size },                    // bottom-left
+    { x: x + size, y: y + size }              // bottom-right
+];
+
+let funnelClearance = true;
+obstacleCorners.forEach(corner => {
+    const distanceToFunnel = Math.sqrt(
+        (corner.x - funnelCenterX) ** 2 + (corner.y - funnelCenterY) ** 2
+    );
+    if (distanceToFunnel < currentFunnelSize / 2 + 20) { // 20px minimum gap
+        funnelClearance = false;
+    }
+});
+
+if (distanceFromBall >= 50 && 
+    funnelClearance && 
     !tooCloseToOtherObstacles) {
     validPosition = true;
 }
