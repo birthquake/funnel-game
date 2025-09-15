@@ -1208,32 +1208,32 @@
                 this.ballX += this.ballVelX;
                 this.ballY += this.ballVelY;
                 
-                // Wall collisions with enhanced bounce and feedback
-                let wallCollision = false;
-                if (this.ballX <= 0) {
-                    this.ballX = 0;
-                    this.ballVelX *= -0.7;
-                    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-                    wallCollision = true;
-                }
-                if (this.ballX >= this.containerWidth - this.ballSize) {
-                    this.ballX = this.containerWidth - this.ballSize;
-                    this.ballVelX *= -0.7;
-                    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-                    wallCollision = true;
-                }
-                if (this.ballY <= 0) {
-                    this.ballY = 0;
-                    this.ballVelY *= -0.7;
-                    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-                    wallCollision = true;
-                }
-                if (this.ballY >= this.containerHeight - this.ballSize) {
-                    this.ballY = this.containerHeight - this.ballSize;
-                    this.ballVelY *= -0.7;
-                    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-                    wallCollision = true;
-                }
+                // Wall collisions with enhanced bounce and feedback - fixed tunneling bug
+let wallCollision = false;
+if (this.ballX <= 0) {
+    this.ballX = 0;
+    this.ballVelX = Math.abs(this.ballVelX) * 0.7; // Force positive direction
+    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
+    wallCollision = true;
+}
+if (this.ballX >= this.containerWidth - this.ballSize) {
+    this.ballX = this.containerWidth - this.ballSize;
+    this.ballVelX = Math.abs(this.ballVelX) * -0.7; // Force negative direction
+    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
+    wallCollision = true;
+}
+if (this.ballY <= 0) {
+    this.ballY = 0;
+    this.ballVelY = Math.abs(this.ballVelY) * 0.7; // Force positive direction
+    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
+    wallCollision = true;
+}
+if (this.ballY >= this.containerHeight - this.ballSize) {
+    this.ballY = this.containerHeight - this.ballSize;
+    this.ballVelY = Math.abs(this.ballVelY) * -0.7; // Force negative direction
+    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
+    wallCollision = true;
+}
                 
                 // NEW: Enhanced wall collision feedback
                 if (wallCollision) {
