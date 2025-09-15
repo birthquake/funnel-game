@@ -1043,27 +1043,27 @@
                         }
                     });
                     
- // More stringent funnel clearance - check all four corners of obstacle
+ // Enhanced funnel clearance - check rectangular overlap
 const currentFunnelSize = this.getCurrentConfig().funnelSize;
-const obstacleCorners = [
-    { x: x, y: y },                           // top-left
-    { x: x + size, y: y },                    // top-right  
-    { x: x, y: y + size },                    // bottom-left
-    { x: x + size, y: y + size }              // bottom-right
-];
+const obstacleLeft = x;
+const obstacleRight = x + size;
+const obstacleTop = y;
+const obstacleBottom = y + size;
 
-let funnelClearance = true;
-obstacleCorners.forEach(corner => {
-    const distanceToFunnel = Math.sqrt(
-        (corner.x - funnelCenterX) ** 2 + (corner.y - funnelCenterY) ** 2
-    );
-    if (distanceToFunnel < currentFunnelSize / 2 + 20) { // 20px minimum gap
-        funnelClearance = false;
-    }
-});
+const funnelLeft = this.funnelX - 20; // 20px buffer
+const funnelRight = this.funnelX + currentFunnelSize + 20;
+const funnelTop = this.funnelY - 20;
+const funnelBottom = this.funnelY + currentFunnelSize + 20;
+
+const hasRectangularOverlap = !(
+    obstacleRight < funnelLeft ||
+    obstacleLeft > funnelRight ||
+    obstacleBottom < funnelTop ||
+    obstacleTop > funnelBottom
+);
 
 if (distanceFromBall >= 50 && 
-    funnelClearance && 
+    !hasRectangularOverlap && 
     !tooCloseToOtherObstacles) {
     validPosition = true;
 }
@@ -1235,9 +1235,9 @@ if (this.ballX <= 0) {
     this.createParticles(this.ballX, this.ballY, '#ff6b6b');
     wallCollision = true;
 }
-if (this.ballX >= this.containerWidth - this.ballSize) {
+    if (this.ballX >= this.containerWidth - this.ballSize) {
     this.ballX = this.containerWidth - this.ballSize;
-    this.ballVelX = Math.abs(this.ballVelX) * -0.7; // Force negative direction
+    this.ballVelX = -Math.abs(this.ballVelX) * 0.7; // Force negative direction
     this.createParticles(this.ballX, this.ballY, '#ff6b6b');
     wallCollision = true;
 }
