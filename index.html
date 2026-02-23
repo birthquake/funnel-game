@@ -5,30 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TiltSphere - Ultimate Ball Challenge</title>
     <style>
-        /* Reset and base styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html {
-            height: 100%;
-            overflow: hidden;
-        }
+        html { height: 100%; overflow: hidden; }
 
         body {
             background: linear-gradient(135deg, #0f0f23, #1a1a2e, #16213e, #0f3460);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
             font-family: 'Arial', sans-serif;
-            color: #ffffff;
+            color: #fff;
             overflow: hidden;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -36,22 +25,17 @@
         }
 
         @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        /* Header styles */
-        .header {
-            text-align: center;
-            margin-bottom: 10px;
-            z-index: 50;
-        }
+        /* ── Header ── */
+        .header { text-align: center; margin-bottom: 10px; z-index: 50; }
 
         .title {
-            font-size: 28px;
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(99, 179, 237, 0.8);
+            font-size: 28px; font-weight: bold;
+            text-shadow: 0 0 20px rgba(99,179,237,.8);
             margin-bottom: 5px;
             background: linear-gradient(45deg, #63b3ed, #4fd1c7, #68d391);
             -webkit-background-clip: text;
@@ -60,1862 +44,1291 @@
         }
 
         .stats {
-            display: flex;
-            gap: 15px;
-            font-size: 14px;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: flex; gap: 15px; font-size: 14px;
+            margin-bottom: 8px; flex-wrap: wrap; justify-content: center;
         }
 
         .stat-item {
             padding: 3px 8px;
-            background: rgba(99, 179, 237, 0.1);
+            background: rgba(99,179,237,.1);
             border-radius: 10px;
-            border: 1px solid rgba(99, 179, 237, 0.3);
+            border: 1px solid rgba(99,179,237,.3);
         }
 
         .progress-meter {
-            width: 200px;
-            height: 12px;
-            background: #333;
-            border: 1px solid #63b3ed;
-            margin: 10px auto;
-            border-radius: 6px;
-            overflow: hidden;
+            width: 200px; height: 12px; background: #333;
+            border: 1px solid #63b3ed; margin: 10px auto;
+            border-radius: 6px; overflow: hidden;
         }
 
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #68d391, #4fd1c7, #63b3ed);
-            width: 0%;
-            transition: width 0.5s ease;
+            width: 0%; transition: width .5s ease;
         }
 
-        /* Level preview styles */
-        .level-preview {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            border: 2px solid #63b3ed;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            z-index: 100;
-            min-width: 250px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
+        /* ── Difficulty badges ── */
+        .difficulty-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; margin-left:8px; }
+        .difficulty-easy        { background:#68d391; color:#000; }
+        .difficulty-medium      { background:#f6ad55; color:#000; }
+        .difficulty-hard        { background:#f56565; color:#fff; }
+        .difficulty-expert      { background:#9f7aea; color:#fff; }
+        .difficulty-legendary   { background:#ffd700; color:#000; }
+        .difficulty-master      { background:#e53e3e; color:#fff; }
+        .difficulty-grandmaster { background:#1a365d; color:#fff; }
+        .difficulty-ultimate    { background:#000;    color:#ffd700; }
 
-        .level-preview.show {
-            opacity: 1;
-        }
-
-        .level-preview h3 {
-            color: #63b3ed;
-            margin-bottom: 10px;
-        }
-
-        .level-preview-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        /* Achievement notification styles */
-        .achievement-notification {
-            position: fixed;
-            top: 20px;
-            right: -400px;
-            background: linear-gradient(45deg, #ffd700, #ffed4e);
-            color: #000;
-            padding: 15px 20px;
-            border-radius: 10px;
-            border: 2px solid #ffd700;
-            font-weight: bold;
-            z-index: 200;
-            transition: right 0.5s ease;
-            max-width: 300px;
-            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
-        }
-
-        .achievement-notification.show {
-            right: 20px;
-        }
-
-        .achievement-title {
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .achievement-description {
-            font-size: 12px;
-            opacity: 0.8;
-        }
-
-        /* Difficulty badges */
-        .difficulty-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            margin-left: 8px;
-        }
-
-        .difficulty-easy { background: #68d391; color: #000; }
-        .difficulty-medium { background: #f6ad55; color: #000; }
-        .difficulty-hard { background: #f56565; color: #fff; }
-        .difficulty-expert { background: #9f7aea; color: #fff; }
-        .difficulty-legendary { background: #ffd700; color: #000; }
-        .difficulty-master { background: #e53e3e; color: #fff; }
-        .difficulty-grandmaster { background: #1a365d; color: #fff; }
-        .difficulty-ultimate { background: #000000; color: #ffd700; }
-
-        /* Game container styles */
+        /* ── Canvas wrapper ── */
         .game-container {
             position: relative;
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle at center, #2d3748, #1a202c);
+            width: 350px; height: 350px;
             border: 3px solid #63b3ed;
             border-radius: 20px;
-            box-shadow: 
-                0 0 30px rgba(99, 179, 237, 0.4),
-                inset 0 0 30px rgba(99, 179, 237, 0.1);
+            box-shadow: 0 0 30px rgba(99,179,237,.4), inset 0 0 30px rgba(99,179,237,.1);
             overflow: hidden;
         }
 
-        /* Ball styles */
-        .ball {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: radial-gradient(circle at 30% 30%, #ffffff, #f56565, #e53e3e);
-            border-radius: 50%;
-            box-shadow: 
-                0 0 20px rgba(245, 101, 101, 0.8),
-                inset -3px -3px 8px rgba(0, 0, 0, 0.4),
-                inset 2px 2px 4px rgba(255, 255, 255, 0.3);
-                transition: transform 0.1s ease-out, opacity 0.1s ease-out;            
-            z-index: 10;
-            left: 165px;
-            top: 165px;
+        canvas {
+            display: block;
+            width: 350px; height: 350px;
+            border-radius: 17px;
         }
 
-        /* Ball trail effects */
-        .ball-trail {
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(245, 101, 101, 0.6), transparent);
+        /* ── Save indicator (overlaid on canvas) ── */
+        .save-indicator {
+            position: absolute; top: 10px; right: 10px;
+            background: rgba(104,211,145,.2); border: 1px solid #68d391;
+            padding: 5px 10px; border-radius: 15px; font-size: 10px;
+            color: #68d391; opacity: 0; transition: opacity .3s ease;
             pointer-events: none;
-            z-index: 5;
-            opacity: 0.7;
         }
+        .save-indicator.show { opacity: 1; }
 
-        /* Target funnel styles */
-        .funnel {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: radial-gradient(circle at center, #38a169, #48bb78, #68d391);
-            box-shadow: 
-                0 0 25px rgba(104, 211, 145, 0.8),
-                inset 0 0 15px rgba(0, 0, 0, 0.5);
-            border: 2px solid #68d391;
-            animation: funnelPulse 2s ease-in-out infinite;
-            left: 250px;
-            top: 250px;
+        /* ── Pause overlay (overlaid on canvas) ── */
+        .paused-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,.8);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 150; opacity: 0; pointer-events: none;
+            transition: opacity .3s ease; border-radius: 17px;
         }
+        .paused-overlay.show { opacity: 1; pointer-events: all; }
+        .paused-content { text-align: center; color: #fff; }
+        .paused-content h2 { font-size: 24px; margin-bottom: 10px; color: #63b3ed; }
 
-        @keyframes funnelPulse {
-            0%, 100% { 
-                box-shadow: 0 0 25px rgba(104, 211, 145, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.5); 
-                transform: scale(1);
-            }
-            50% { 
-                box-shadow: 0 0 40px rgba(104, 211, 145, 1), inset 0 0 15px rgba(0, 0, 0, 0.5); 
-                transform: scale(1.05);
-            }
+        /* ── Achievement toast ── */
+        .achievement-notification {
+            position: fixed; top: 20px; right: -400px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #000; padding: 15px 20px; border-radius: 10px;
+            border: 2px solid #ffd700; font-weight: bold;
+            z-index: 200; transition: right .5s ease; max-width: 300px;
+            box-shadow: 0 4px 20px rgba(255,215,0,.4);
         }
+        .achievement-notification.show { right: 20px; }
+        .achievement-title       { font-size: 16px; margin-bottom: 5px; }
+        .achievement-description { font-size: 12px; opacity: .8; }
 
-        /* Obstacle styles */
-        .obstacle {
-            position: absolute;
-            background: linear-gradient(45deg, #744210, #975a16);
-            border: 1px solid #d69e2e;
-            box-shadow: 0 0 15px rgba(214, 158, 46, 0.4);
-        }
-
-        .moving-obstacle {
-            background: linear-gradient(45deg, #553c9a, #6b46c1);
-            border: 1px solid #9f7aea;
-            box-shadow: 0 0 15px rgba(159, 122, 234, 0.4);
-        }
-
-        /* Particle effects */
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 15;
-        }
-        /* Control styles */
+        /* ── Controls ── */
         .controls {
-            text-align: center;
-            margin-top: 15px;
-            font-size: 12px;
-            max-width: 350px;
-            z-index: 50;
+            text-align: center; margin-top: 15px;
+            font-size: 12px; max-width: 350px; z-index: 50;
         }
 
         .start-button, .menu-button {
             background: linear-gradient(45deg, #63b3ed, #4fd1c7);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            font-family: inherit;
-            cursor: pointer;
-            margin: 8px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(99, 179, 237, 0.3);
-            transition: all 0.3s ease;
+            border: none; color: #fff; padding: 12px 24px;
+            font-family: inherit; cursor: pointer; margin: 8px;
+            border-radius: 8px; font-size: 14px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(99,179,237,.3);
+            transition: all .3s ease;
         }
-
         .start-button:hover, .menu-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 179, 237, 0.4);
+            box-shadow: 0 6px 20px rgba(99,179,237,.4);
         }
-
         .menu-button {
-            font-size: 12px;
-            padding: 8px 16px;
+            font-size: 12px; padding: 8px 16px;
             background: linear-gradient(45deg, #4a5568, #63b3ed);
         }
-
         .menu-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: flex; gap: 10px; margin-top: 10px;
+            flex-wrap: wrap; justify-content: center;
         }
 
-        /* Animation utilities */
-        .pulse {
-            animation: pulse 0.5s ease;
-        }
-
-        .shake {
-            animation: shake 0.3s ease;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(99, 179, 237, 0.8); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        /* Moving obstacle animations */
-        @keyframes movingObstacle {
-            0% { transform: translateX(0); }
-            50% { transform: translateX(80px); }
-            100% { transform: translateX(0); }
-        }
-
-        .obstacle.moving {
-            animation: movingObstacle 4s ease-in-out infinite;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .obstacle.rotating {
-            animation: rotate 6s linear infinite;
-        }
-
-        /* Particle explosion effects */
-        @keyframes particleExplosion {
-            0% {
-                opacity: 1;
-                transform: scale(1) translateX(0) translateY(0);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(0.2) translateX(var(--dx)) translateY(var(--dy));
-            }
-        }
-
-        .particle-explosion {
-            animation: particleExplosion 0.8s ease-out forwards;
-        }
-
-        /* Save indicator */
-        .save-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(104, 211, 145, 0.2);
-            border: 1px solid #68d391;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 10px;
-            color: #68d391;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .save-indicator.show {
-            opacity: 1;
-        }
-
-        /* Paused overlay */
-        .paused-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 150;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .paused-overlay.show {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .paused-content {
-            text-align: center;
-            color: white;
-        }
-
-        .paused-content h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #63b3ed;
-        }
-
-        /* Skip level button styles */
         .skip-level-hint {
-            font-size: 10px;
-            color: #f6ad55;
-            margin-top: 5px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            font-size: 10px; color: #f6ad55; margin-top: 5px;
+            opacity: 0; transition: opacity .3s ease;
         }
-
-        .skip-level-hint.show {
-            opacity: 1;
-        }
-
-        /* Emergency center button */
-/*
-.emergency-center {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(245, 101, 101, 0.2);
-    border: 1px solid #f56565;
-    color: #f56565;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 10px;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.emergency-center.show {
-    opacity: 1;
-}
-
-.emergency-center:hover {
-    background: rgba(245, 101, 101, 0.4);
-}
-*/
-
-        /* Collision feedback styles */
-        .collision-wall {
-            animation: wallCollisionFeedback 0.3s ease;
-        }
-
-        .collision-obstacle {
-            animation: obstacleCollisionFeedback 0.3s ease;
-        }
-
-        @keyframes wallCollisionFeedback {
-            0% { border-color: #63b3ed; }
-            50% { border-color: #f56565; box-shadow: 0 0 30px rgba(245, 101, 101, 0.6); }
-            100% { border-color: #63b3ed; }
-        }
-
-        @keyframes obstacleCollisionFeedback {
-            0% { filter: brightness(1); }
-            50% { filter: brightness(1.5) saturate(1.5); }
-            100% { filter: brightness(1); }
-        }
+        .skip-level-hint.show { opacity: 1; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="title">TILTSPHERE</div>
-        <div class="stats">
-            <div class="stat-item">Level: <span id="level">1</span><span id="difficultyBadge" class="difficulty-badge difficulty-easy">EASY</span></div>
-            <div class="stat-item">Score: <span id="score">0</span></div>
-            <div class="stat-item">Best: <span id="bestScore">0</span></div>
-        </div>
-        <div class="progress-meter">
-            <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div style="font-size: 10px;">Progress: <span id="progressLevel">0%</span> • <span id="achievementCount">0</span> achievements</div>
-    </div>
 
-    <!-- Level Preview -->
-    <div class="level-preview" id="levelPreview">
-        <h3>Level <span id="previewLevel"></span></h3>
-        <div class="level-preview-stats">
-            <div>Difficulty: <span id="previewDifficulty"></span></div>
-            <div>Obstacles: <span id="previewObstacles"></span></div>
-            <div>Target Size: <span id="previewFunnelSize"></span></div>
+<!-- ── Header ── -->
+<div class="header">
+    <div class="title">TILTSPHERE</div>
+    <div class="stats">
+        <div class="stat-item">Level: <span id="level">1</span><span id="difficultyBadge" class="difficulty-badge difficulty-easy">EASY</span></div>
+        <div class="stat-item">Score: <span id="score">0</span></div>
+        <div class="stat-item">Best: <span id="bestScore">0</span></div>
+    </div>
+    <div class="progress-meter"><div class="progress-fill" id="progressFill"></div></div>
+    <div style="font-size:10px">Progress: <span id="progressLevel">0%</span> • <span id="achievementCount">0</span> achievements</div>
+</div>
+
+<!-- ── Achievement toast ── -->
+<div class="achievement-notification" id="achievementNotification">
+    <div class="achievement-title"       id="achievementTitle"></div>
+    <div class="achievement-description" id="achievementDescription"></div>
+</div>
+
+<!-- ── Game canvas ── -->
+<div class="game-container" id="gameContainer">
+    <canvas id="gameCanvas" width="350" height="350"></canvas>
+    <div class="save-indicator" id="saveIndicator">Progress Saved!</div>
+    <div class="paused-overlay" id="pausedOverlay">
+        <div class="paused-content">
+            <h2>PAUSED</h2>
+            <p id="pauseMsg">Click anywhere to resume</p>
         </div>
     </div>
+</div>
 
-    <!-- Achievement Notification -->
-    <div class="achievement-notification" id="achievementNotification">
-        <div class="achievement-title" id="achievementTitle"></div>
-        <div class="achievement-description" id="achievementDescription"></div>
+<!-- ── Controls ── -->
+<div class="controls">
+    <button class="start-button" id="startButton">START GAME</button>
+    <div class="menu-buttons" id="menuButtons" style="display:none">
+        <button class="menu-button" onclick="game.pauseGame()">Pause</button>
+        <button class="menu-button" onclick="game.saveGame()">Save</button>
+        <button class="menu-button" onclick="game.showSettings()">Settings</button>
+        <button class="menu-button" onclick="game.resetProgress()">Reset</button>
+        <button class="menu-button" id="skipButton" onclick="game.skipLevel()" style="display:none">Skip Level</button>
     </div>
+    <div>Tilt your device or use arrow keys to guide the ball into the target</div>
+    <div class="skip-level-hint" id="skipLevelHint">Having trouble? Skip available after 10 attempts</div>
+    <div style="margin-top:5px;font-size:10px" id="saveStatus"></div>
+</div>
 
-    <div class="game-container" id="gameContainer">
-        <div class="ball" id="ball"></div>
-        <div class="funnel" id="funnel"></div>
-        <div class="save-indicator" id="saveIndicator">Progress Saved!</div>
-<!-- <div class="emergency-center" id="emergencyCenter">Double-tap to center ball</div> -->        
-        <!-- Paused Overlay -->
-        <div class="paused-overlay" id="pausedOverlay">
-            <div class="paused-content">
-                <h2>PAUSED</h2>
-                <p>Click anywhere to resume</p>
-            </div>
+<!-- ── Settings modal ── -->
+<div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:20px;width:90%;max-width:300px;color:#fff">
+        <h3 style="text-align:center;margin-bottom:20px;color:#63b3ed">Settings</h3>
+        <div style="margin-bottom:15px">
+            <label style="display:block;margin-bottom:5px">Sensitivity: <span id="sensitivityValue">50</span>%</label>
+            <input type="range" id="sensitivitySlider" min="10" max="100" value="50" style="width:100%">
+        </div>
+        <div style="margin-bottom:15px">
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="soundToggle" checked><span>Sound Effects</span></label>
+        </div>
+        <div style="margin-bottom:15px">
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="hapticToggle" checked><span>Haptic Feedback</span></label>
+        </div>
+        <div style="margin-bottom:15px">
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="trailToggle" checked><span>Ball Trail</span></label>
+        </div>
+        <div style="margin-bottom:20px">
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="autoPauseToggle" checked><span>Auto-pause when window loses focus</span></label>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="game.saveSettings()" style="background:#68d391;color:#000;border:none;padding:8px 16px;border-radius:5px;cursor:pointer">Save</button>
+            <button onclick="game.closeSettings()" style="background:#f56565;color:#fff;border:none;padding:8px 16px;border-radius:5px;cursor:pointer">Cancel</button>
         </div>
     </div>
+</div>
 
-    <div class="controls">
-        <button class="start-button" id="startButton">START GAME</button>
-        <div class="menu-buttons" id="menuButtons" style="display: none;">
-            <button class="menu-button" onclick="game.pauseGame()">Pause</button>
-            <button class="menu-button" onclick="game.saveGame()">Save</button>
-            <button class="menu-button" onclick="game.showSettings()">Settings</button>
-            <button class="menu-button" onclick="game.resetProgress()">Reset</button>
-            <button class="menu-button" id="skipButton" onclick="game.skipLevel()" style="display: none;">Skip Level</button>
-        </div>
-        
-        <div>Tilt your device to guide the ball into the target</div>
-        <div class="skip-level-hint" id="skipLevelHint">Having trouble? Skip available after 10 attempts</div>
-        <div style="margin-top: 5px; font-size: 10px;" id="saveStatus"></div>
-    </div>
-    <!-- Settings Modal -->
-    <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center;">
-        <div style="background: linear-gradient(135deg, #1a202c, #2d3748); border: 2px solid #63b3ed; border-radius: 15px; padding: 20px; width: 90%; max-width: 300px; color: white;">
-            <h3 style="text-align: center; margin-bottom: 20px; color: #63b3ed;">Settings</h3>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px;">Sensitivity: <span id="sensitivityValue">50</span>%</label>
-                <input type="range" id="sensitivitySlider" min="10" max="100" value="50" style="width: 100%;">
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="soundToggle" checked>
-                    <span>Sound Effects</span>
-                </label>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="hapticToggle" checked>
-                    <span>Haptic Feedback</span>
-                </label>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="trailToggle" checked>
-                    <span>Ball Trail</span>
-                </label>
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="autoPauseToggle" checked>
-                    <span>Auto-pause when window loses focus</span>
-                </label>
-            </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="game.saveSettings()" style="background: #68d391; color: black; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Save</button>
-                <button onclick="game.closeSettings()" style="background: #f56565; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Cancel</button>
-            </div>
-        </div>
-    </div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  TiltSphere — Canvas Edition
+//  All game logic is identical to the DOM version.
+//  Only the rendering layer has been replaced with Canvas 2D.
+// ═══════════════════════════════════════════════════════════════
 
-    <script>
-        class TiltBallGame {
-            constructor() {
-                // DOM elements
-                this.ball = document.getElementById('ball');
-                this.funnel = document.getElementById('funnel');
-                this.gameContainer = document.getElementById('gameContainer');
-                this.startButton = document.getElementById('startButton');
-                this.pausedOverlay = document.getElementById('pausedOverlay');
-                this.emergencyCenter = document.getElementById('emergencyCenter');
-                this.achievementNotification = document.getElementById('achievementNotification');
-                this.levelPreview = document.getElementById('levelPreview');
-                
-                // Ball physics
-                this.ballX = 165;
-                this.ballY = 165;
-                this.ballVelX = 0;
-                this.ballVelY = 0;
-                this.friction = 0.95;
-                this.sensitivity = 0.5;
-                this.maxVelocity = 8; // NEW: Velocity cap
-                
-                // Game state
-                this.level = 1;
-                this.score = 0;
-                this.bestScore = parseInt(localStorage.getItem('tiltSphereBest') || '0');
-                this.gameRunning = false;
-                this.gamePaused = false;
-                this.obstacles = [];
-                this.particles = [];
-                this.ballTrail = [];
-                this.ballTrailElements = []; // NEW: Reusable trail elements
-                this.achievements = JSON.parse(localStorage.getItem('tiltSphereAchievements') || '[]');
-                this.levelAttempts = 0; // NEW: Track attempts for skip feature
-                this.stuckTimer = 0; // NEW: Track if ball is stuck
-                this.lastBallPosition = { x: 165, y: 165 };
-                
-                // CRITICAL: Race condition protection
-                this.levelCompleting = false;
-                
-                // Game constants
-                this.containerWidth = 350;
-                this.containerHeight = 350;
-                this.ballSize = 20;
-                
-                // NEW: Enhanced settings
-                this.settings = {
-                    sound: true,
-                    haptic: true,
-                    trail: true,
-                    sensitivity: 50,
-                    autoPause: true
-                };
-                
-                // Load settings with error handling
-                try {
-                    const savedSettings = localStorage.getItem('tiltSphereSettings');
-                    if (savedSettings) {
-                        this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
-                    }
-                } catch (error) {
-                    console.warn('Failed to load settings:', error);
-                }
-                
-                // Generate all 250 levels with proper funnel sizing
-                this.levelConfigs = this.generateLevelConfigs();
-                
-                // Initialize
-                this.loadGame();
-                this.setupLevel();
-                this.updateUI();
-                this.setupEventListeners();
-                
-                // NEW: Auto-pause on window blur
-                this.setupAutoPause();
-                
-                // NEW: Emergency center functionality
-                // this.setupEmergencyCenter();
-            }
-            
-            setupEventListeners() {
-                this.startButton.addEventListener('click', () => this.requestPermission());
-                
-                // NEW: Paused overlay click to resume
-                this.pausedOverlay.addEventListener('click', () => {
-                    if (this.gamePaused) {
-                        this.resumeGame();
-                    }
-                });
-            }
-            
-            setupAutoPause() {
-                // NEW: Auto-pause when window loses focus
-                window.addEventListener('blur', () => {
-                    if (this.gameRunning && !this.gamePaused && this.settings.autoPause) {
-                        this.pauseGame(true); // true = auto-pause
-                    }
-                });
-                
-                window.addEventListener('focus', () => {
-                    // Don't auto-resume, let user click to resume
-                });
-            }
-            
-            setupEmergencyCenter() {
-                // NEW: Double-tap to center ball
-                let tapCount = 0;
-                let tapTimer = null;
-                
-                this.emergencyCenter.addEventListener('click', () => {
-                    tapCount++;
-                    
-                    if (tapCount === 1) {
-                        tapTimer = setTimeout(() => {
-                            tapCount = 0;
-                        }, 500);
-                    } else if (tapCount === 2) {
-                        clearTimeout(tapTimer);
-                        tapCount = 0;
-                        this.centerBall();
-                    }
-                });
-            }
-            
-            centerBall() {
-                // NEW: Emergency ball centering
-                if (!this.gameRunning || this.gamePaused) return;
-                
-                this.ballX = 165;
-                this.ballY = 165;
-                this.ballVelX = 0;
-                this.ballVelY = 0;
-                
-                // Visual feedback
-                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#4fd1c7', 12);
-                this.gameContainer.classList.add('pulse');
-                setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
-                
-                // Hide emergency button temporarily
-                // this.emergencyCenter.classList.remove('show');
-                this.stuckTimer = 0;
-            }
-            animateBallIntoFunnel(callback) {
-    // Disable game physics during animation
-    this.ballVelX = 0;
-    this.ballVelY = 0;
-    
-    const config = this.getCurrentConfig();
-    const funnelSize = Math.max(config.funnelSize, 30);
-    const funnelCenterX = this.funnelX + funnelSize / 2;
-    const funnelCenterY = this.funnelY + funnelSize / 2;
-    
-    // Animation parameters
-    const startTime = Date.now();
-    const duration = 1200; // 1.2 seconds
-    const initialRadius = Math.sqrt(
-        (this.ballX + this.ballSize/2 - funnelCenterX) ** 2 + 
-        (this.ballY + this.ballSize/2 - funnelCenterY) ** 2
-    );
-    
-    const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        if (progress >= 1) {
-            // Animation complete
-            this.ball.style.transform = 'scale(0.1)';
-            this.ball.style.opacity = '0.2';
-            setTimeout(() => {
-                this.ball.style.transform = 'scale(1)';
-                this.ball.style.opacity = '1';
-                callback();
-            }, 200);
-            return;
+class TiltBallGame {
+    constructor() {
+        // ── Canvas setup ──────────────────────────────────────
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx    = this.canvas.getContext('2d');
+
+        // ── DOM refs (UI only — nothing rendered as DOM elements now) ──
+        this.startButton          = document.getElementById('startButton');
+        this.pausedOverlay        = document.getElementById('pausedOverlay');
+        this.achievementNotification = document.getElementById('achievementNotification');
+
+        // ── Physics ───────────────────────────────────────────
+        this.ballX    = 165;  this.ballY    = 165;
+        this.ballVelX = 0;    this.ballVelY = 0;
+        this.friction    = 0.95;
+        this.sensitivity = 0.5;
+        this.maxVelocity = 8;
+        this.ballSize    = 20;  // radius = 10
+
+        // ── Game state ────────────────────────────────────────
+        this.level         = 1;
+        this.score         = 0;
+        this.bestScore     = parseInt(localStorage.getItem('tiltSphereBest') || '0');
+        this.gameRunning   = false;
+        this.gamePaused    = false;
+        this.levelCompleting = false;
+        this.levelAttempts = 0;
+        this.stuckTimer    = 0;
+        this.lastBallPos   = { x: 165, y: 165 };
+
+        // ── Obstacles (pure data, no DOM elements) ────────────
+        // Each: { x, y, w, h, isMoving, dir, speed, range, startX, startY, phase }
+        this.obstacles = [];
+
+        // ── Visual trail (array of {x,y,alpha}) ──────────────
+        this.trail = [];
+
+        // ── Canvas particles ──────────────────────────────────
+        // Each: { x, y, vx, vy, life, maxLife, color, size }
+        this.particles = [];
+
+        // ── Shockwave rings (level-complete effect) ───────────
+        // Each: { x, y, radius, maxRadius, life, maxLife }
+        this.shockwaves = [];
+
+        // ── Score popups ──────────────────────────────────────
+        // Each: { x, y, text, life, maxLife }
+        this.scorePopups = [];
+
+        // ── Achievements ──────────────────────────────────────
+        this.achievements = JSON.parse(localStorage.getItem('tiltSphereAchievements') || '[]');
+
+        // ── Settings ─────────────────────────────────────────
+        this.settings = { sound:true, haptic:true, trail:true, sensitivity:50, autoPause:true };
+        try {
+            const s = localStorage.getItem('tiltSphereSettings');
+            if (s) this.settings = { ...this.settings, ...JSON.parse(s) };
+        } catch(e) { console.warn('Settings load failed', e); }
+
+        // ── Arena size ────────────────────────────────────────
+        this.W = 350;
+        this.H = 350;
+
+        // ── Funnel position (set in setupLevel) ───────────────
+        this.funnelX = 280; this.funnelY = 280;
+        this.funnelPulsePhase = 0;
+
+        // ── Animation time (for moving obstacle phase) ────────
+        this.time = 0;
+
+        // ── Level configs ─────────────────────────────────────
+        this.levelConfigs = this.generateLevelConfigs();
+
+        // ── Init ──────────────────────────────────────────────
+        this.loadGame();
+        this.setupLevel();
+        this.updateUI();
+        this.setupEventListeners();
+        this.setupAutoPause();
+
+        // Start render loop even before game starts (draws idle state)
+        this.renderLoop();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  LEVEL CONFIG GENERATION (unchanged from DOM version)
+    // ─────────────────────────────────────────────────────────
+    generateLevelConfigs() {
+        const c = [];
+        for (let i = 1;   i <= 20;  i++) c.push({ funnelSize: Math.max(60-i*2,35),   obstacles: Math.min(2+Math.floor(i/3),6),          movingObstacles: 0,                              ballSpeed: 1+(i*.02),              difficulty:'easy',        specialMechanic:null });
+        for (let i = 21;  i <= 40;  i++) c.push({ funnelSize: Math.max(35-(i-20)*.25,30), obstacles: Math.min(2+Math.floor((i-20)/3),6), movingObstacles: Math.min(Math.floor((i-25)/3),2), ballSpeed: 1.2+((i-20)*.03),      difficulty:'medium',      specialMechanic: i%8===0?'rotating':null });
+        for (let i = 41;  i <= 60;  i++) c.push({ funnelSize: 30,                     obstacles: Math.min(4+Math.floor((i-40)/2),10),    movingObstacles: Math.min(Math.floor((i-40)/3),4), ballSpeed: 1.4+((i-40)*.04),      difficulty:'hard',        specialMechanic:['rotating','bouncy'][Math.floor((i-40)/10)%2] });
+        for (let i = 61;  i <= 80;  i++) c.push({ funnelSize: 30,                     obstacles: Math.min(6+Math.floor((i-60)/2),15),    movingObstacles: Math.min(3+Math.floor((i-60)/3),6), ballSpeed: 1.6+((i-60)*.05),   difficulty:'expert',      specialMechanic:['maze','spiral'][Math.floor((i-60)/10)%2] });
+        for (let i = 81;  i <= 100; i++) c.push({ funnelSize: 30,                     obstacles: Math.min(10+Math.floor((i-80)/2),20),   movingObstacles: Math.min(4+Math.floor((i-80)/2),8), ballSpeed: 1.8+((i-80)*.06),   difficulty:'legendary',   specialMechanic:['ultimate','chaos'][Math.floor((i-80)/10)%2] });
+        for (let i = 101; i <= 250; i++) {
+            const tier = Math.floor((i-101)/50);
+            c.push({ funnelSize: 30, obstacles: Math.min(12+Math.floor((i-100)/5),35), movingObstacles: Math.min(5+Math.floor((i-100)/10),15), ballSpeed: 2.0+((i-100)*.02), difficulty: ['master','grandmaster','ultimate'][Math.min(tier,2)], specialMechanic:['master_challenge','ultimate_precision','chaos_mode'][tier%3] });
         }
-        
-        // Easing function for smooth deceleration
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        
-        // Calculate spiral position
-        const radius = initialRadius * (1 - easeOut);
-        const angle = progress * Math.PI * 6; // 3 full rotations
-        const scale = 1 - (progress * 0.7); // Shrink to 30% size
-        
-        // Position ball in spiral
-        const spiralX = funnelCenterX + Math.cos(angle) * radius - this.ballSize/2;
-        const spiralY = funnelCenterY + Math.sin(angle) * radius - this.ballSize/2;
-        
-        this.ballX = spiralX;
-        this.ballY = spiralY;
-        
-        // Update visual position and scale
-        this.ball.style.left = this.ballX + 'px';
-        this.ball.style.top = this.ballY + 'px';
-        this.ball.style.transform = `scale(${scale})`;
-        this.ball.style.opacity = scale; // Fade as it shrinks
-        
-        // Create spiral trail particles
-        if (Math.random() < 0.3) {
-            this.createParticles(
-                this.ballX + this.ballSize/2, 
-                this.ballY + this.ballSize/2, 
-                '#4fd1c7', 
-                2
+        return c;
+    }
+
+    getCurrentConfig() {
+        return this.levelConfigs[Math.min(this.level-1, this.levelConfigs.length-1)];
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  LEVEL SETUP
+    // ─────────────────────────────────────────────────────────
+    setupLevel() {
+        this.obstacles  = [];
+        this.trail      = [];
+        this.particles  = [];
+        this.shockwaves = [];
+        this.scorePopups = [];
+
+        const cfg = this.getCurrentConfig();
+        const fs  = Math.max(cfg.funnelSize, 30);
+
+        // Place funnel at least 120px from ball start (centre)
+        const margin = Math.max(fs + 20, 30);
+        let placed = false;
+        for (let a = 0; a < 50; a++) {
+            this.funnelX = margin + Math.random() * (this.W - 2*margin - fs);
+            this.funnelY = margin + Math.random() * (this.H - 2*margin - fs);
+            const cx = this.funnelX + fs/2, cy = this.funnelY + fs/2;
+            if (Math.hypot(cx-165, cy-165) >= 120) { placed = true; break; }
+        }
+        if (!placed) {
+            const fb = [
+                { x: this.W-fs-40, y: 40 }, { x: 40, y: this.H-fs-40 },
+                { x: this.W-fs-40, y: this.H-fs-40 }, { x: 40, y: 40 }
+            ];
+            const f = fb[Math.floor(Math.random()*fb.length)];
+            this.funnelX = f.x; this.funnelY = f.y;
+        }
+
+        // Place obstacles
+        for (let i = 0; i < cfg.obstacles;       i++) this.spawnObstacle(false, cfg);
+        for (let i = 0; i < cfg.movingObstacles; i++) this.spawnObstacle(true,  cfg);
+
+        // Reset ball
+        this.ballX = 165; this.ballY = 165;
+        this.ballVelX = 0; this.ballVelY = 0;
+        this.levelAttempts = 0;
+        this.stuckTimer    = 0;
+
+        document.getElementById('skipLevelHint').classList.remove('show');
+        document.getElementById('skipButton').style.display = 'none';
+
+        this.updateDifficultyBadge(cfg.difficulty);
+    }
+
+    spawnObstacle(isMoving, cfg) {
+        const fs   = Math.max(cfg.funnelSize, 30);
+        const size = 20 + Math.random() * 15;
+        let x, y, valid = false;
+
+        for (let a = 0; a < 100; a++) {
+            const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
+            const pp  = Math.random();
+            const pv  = (Math.random()-.5) * 120;
+            const pa  = Math.atan2(fcy-165, fcx-165);
+            const perp = pa + Math.PI/2;
+            x = (165 + (fcx-165)*pp + Math.cos(perp)*pv);
+            y = (165 + (fcy-165)*pp + Math.sin(perp)*pv);
+            x = Math.max(20, Math.min(x, this.W-size-20));
+            y = Math.max(20, Math.min(y, this.H-size-20));
+
+            const dBall = Math.hypot(x+size/2-165, y+size/2-165);
+
+            // No rectangular overlap with funnel + buffer
+            const overlap = !(
+                x+size  < this.funnelX-20 ||
+                x       > this.funnelX+fs+20 ||
+                y+size  < this.funnelY-20 ||
+                y       > this.funnelY+fs+20
             );
+
+            const tooClose = this.obstacles.some(o =>
+                Math.hypot(x+size/2 - o.x-o.w/2, y+size/2 - o.y-o.h/2) < (size+o.w)/2 + 15
+            );
+
+            if (dBall >= 50 && !overlap && !tooClose) { valid = true; break; }
         }
-        
-        requestAnimationFrame(animate);
-    };
-    
-    animate();
-}
-            
-            generateLevelConfigs() {
-                const configs = [];
-                
-                // Levels 1-20: Learning (Easy) - Enhanced with better obstacle distribution
-                for (let i = 1; i <= 20; i++) {
-                    configs.push({
-                        funnelSize: Math.max(60 - i * 2, 35),
-                        obstacles: Math.min(2 + Math.floor(i / 3), 6),
-                        timeLimit: 0,
-                        movingObstacles: 0,
-                        ballSpeed: 1 + (i * 0.02),
-                        difficulty: 'easy',
-                        specialMechanic: null
-                    });
-                }
-                
-                // Levels 21-40: Building Skills (Medium)
-                for (let i = 21; i <= 40; i++) {
-                    configs.push({
-                        funnelSize: Math.max(35 - (i - 20) * 0.25, 30),
-                        obstacles: Math.min(2 + Math.floor((i - 20) / 3), 6),
-                        timeLimit: 0,
-                        movingObstacles: Math.min(Math.floor((i - 25) / 3), 2),
-                        ballSpeed: 1.2 + ((i - 20) * 0.03),
-                        difficulty: 'medium',
-                        specialMechanic: i % 8 === 0 ? 'rotating' : null
-                    });
-                }
-                
-                // Levels 41-60: Advanced (Hard)
-                for (let i = 41; i <= 60; i++) {
-                    configs.push({
-                        funnelSize: 30,
-                        obstacles: Math.min(4 + Math.floor((i - 40) / 2), 10),
-                        timeLimit: 0,
-                        movingObstacles: Math.min(Math.floor((i - 40) / 3), 4),
-                        ballSpeed: 1.4 + ((i - 40) * 0.04),
-                        difficulty: 'hard',
-                        specialMechanic: ['rotating', 'bouncy'][Math.floor((i - 40) / 10) % 2]
-                    });
-                }
-                
-                // Levels 61-80: Expert
-                for (let i = 61; i <= 80; i++) {
-                    configs.push({
-                        funnelSize: 30,
-                        obstacles: Math.min(6 + Math.floor((i - 60) / 2), 15),
-                        timeLimit: 0,
-                        movingObstacles: Math.min(3 + Math.floor((i - 60) / 3), 6),
-                        ballSpeed: 1.6 + ((i - 60) * 0.05),
-                        difficulty: 'expert',
-                        specialMechanic: ['maze', 'spiral'][Math.floor((i - 60) / 10) % 2]
-                    });
-                }
-                
-                // Levels 81-100: Legendary
-                for (let i = 81; i <= 100; i++) {
-                    configs.push({
-                        funnelSize: 30,
-                        obstacles: Math.min(10 + Math.floor((i - 80) / 2), 20),
-                        timeLimit: 0,
-                        movingObstacles: Math.min(4 + Math.floor((i - 80) / 2), 8),
-                        ballSpeed: 1.8 + ((i - 80) * 0.06),
-                        difficulty: 'legendary',
-                        specialMechanic: ['ultimate', 'chaos'][Math.floor((i - 80) / 10) % 2]
-                    });
-                }
-                
-                // Levels 101-250: Keeping 30px minimum funnel, increasing obstacles
-                for (let i = 101; i <= 250; i++) {
-                    const tier = Math.floor((i - 101) / 50);
-                    const difficultyNames = ['master', 'grandmaster', 'ultimate'];
-                    
-                    configs.push({
-                        funnelSize: 30,
-                        obstacles: Math.min(12 + Math.floor((i - 100) / 5), 35),
-                        timeLimit: 0,
-                        movingObstacles: Math.min(5 + Math.floor((i - 100) / 10), 15),
-                        ballSpeed: 2.0 + ((i - 100) * 0.02),
-                        difficulty: difficultyNames[Math.min(tier, 2)],
-                        specialMechanic: ['master_challenge', 'ultimate_precision', 'chaos_mode'][tier % 3]
-                    });
-                }
-                
-                return configs;
-            }
-            setupLevel() {
-                // NEW: Show level preview
-                // this.showLevelPreview();
-                
-                // Clear any existing obstacles and particles
-                this.clearObstacles();
-                this.clearParticles();
-                this.ballTrail = [];
-                this.clearBallTrail();
-                
-                const config = this.getCurrentConfig();
-                
-                // Setup funnel with enforced minimum size
-                const funnelSize = Math.max(config.funnelSize, 30);
-                this.funnel.style.width = funnelSize + 'px';
-                this.funnel.style.height = funnelSize + 'px';
-                
-                // Enhanced funnel positioning with fixed obstacle overlap bug
-                const minDistanceFromBall = 120;
-                const margin = Math.max(funnelSize + 20, 30);
-                let attempts = 0;
-                let validFunnelPosition = false;
 
-                while (!validFunnelPosition && attempts < 50) {
-                    this.funnelX = margin + Math.random() * (this.containerWidth - 2 * margin - funnelSize);
-                    this.funnelY = margin + Math.random() * (this.containerHeight - 2 * margin - funnelSize);
-                    
-                    const funnelCenterX = this.funnelX + funnelSize / 2;
-                    const funnelCenterY = this.funnelY + funnelSize / 2;
-                    const distanceFromBall = Math.sqrt((funnelCenterX - 165) ** 2 + (funnelCenterY - 165) ** 2);
-                    
-                    if (distanceFromBall >= minDistanceFromBall) {
-                        validFunnelPosition = true;
-                    }
-                    attempts++;
-                }
-
-                // Improved fallback positions
-                if (!validFunnelPosition) {
-                    const fallbackPositions = [
-                        { x: this.containerWidth - funnelSize - 40, y: 40 },
-                        { x: 40, y: this.containerHeight - funnelSize - 40 },
-                        { x: this.containerWidth - funnelSize - 40, y: this.containerHeight - funnelSize - 40 },
-                        { x: 40, y: 40 }
-                    ];
-                    
-                    const randomFallback = fallbackPositions[Math.floor(Math.random() * fallbackPositions.length)];
-                    this.funnelX = randomFallback.x;
-                    this.funnelY = randomFallback.y;
-                }
-                
-                this.funnel.style.left = this.funnelX + 'px';
-                this.funnel.style.top = this.funnelY + 'px';
-                
-                // Add obstacles with special mechanics
-                this.addObstacles(config.obstacles, config.movingObstacles, config.specialMechanic);
-                
-                // Reset ball to center
-                this.ballX = 165;
-                this.ballY = 165;
-                this.ballVelX = 0;
-                this.ballVelY = 0;
-                
-                // Reset level attempt tracking
-                this.levelAttempts = 0;
-                this.stuckTimer = 0;
-                // this.emergencyCenter.classList.remove('show');
-                document.getElementById('skipLevelHint').classList.remove('show');
-                document.getElementById('skipButton').style.display = 'none';
-                
-                this.updateDifficultyBadge(config.difficulty);
-            }
-            
-            showLevelPreview() {
-                // NEW: Show level preview before starting
-                if (!this.gameRunning) return;
-                
-                const config = this.getCurrentConfig();
-                const preview = this.levelPreview;
-                
-                document.getElementById('previewLevel').textContent = this.level;
-                document.getElementById('previewDifficulty').textContent = config.difficulty.toUpperCase();
-                document.getElementById('previewObstacles').textContent = config.obstacles + config.movingObstacles;
-                document.getElementById('previewFunnelSize').textContent = config.funnelSize + 'px';
-                
-                preview.classList.add('show');
-                
-                setTimeout(() => {
-                    preview.classList.remove('show');
-                }, 2000);
-            }
-            
-            getCurrentConfig() {
-                return this.levelConfigs[Math.min(this.level - 1, this.levelConfigs.length - 1)];
-            }
-            
-            addObstacles(numStatic, numMoving, specialMechanic) {
-                for (let i = 0; i < numStatic; i++) {
-                    this.createObstacle(false, specialMechanic);
-                }
-                
-                for (let i = 0; i < numMoving; i++) {
-                    this.createObstacle(true, specialMechanic);
-                }
-            }
-            
-            createObstacle(isMoving = false, specialMechanic = null) {
-                const obstacle = document.createElement('div');
-                obstacle.className = 'obstacle';
-                
-                const size = 20 + Math.random() * 15;
-                obstacle.style.width = size + 'px';
-                obstacle.style.height = size + 'px';
-                
-                // FIXED: Enhanced positioning with proper collision detection
-                let x, y;
-                let attempts = 0;
-                let validPosition = false;
-                
-                while (!validPosition && attempts < 100) {
-                    const ballX = 165;
-                    const ballY = 165;
-                    const funnelCenterX = this.funnelX + this.getCurrentConfig().funnelSize / 2;
-                    const funnelCenterY = this.funnelY + this.getCurrentConfig().funnelSize / 2;
-                    
-                    const pathProgress = Math.random();
-                    const pathVariation = (Math.random() - 0.5) * 120;
-                    
-                    const directX = ballX + (funnelCenterX - ballX) * pathProgress;
-                    const directY = ballY + (funnelCenterY - ballY) * pathProgress;
-                    
-                    const pathAngle = Math.atan2(funnelCenterY - ballY, funnelCenterX - ballX);
-                    const perpAngle = pathAngle + Math.PI / 2;
-                    
-                    x = directX + Math.cos(perpAngle) * pathVariation;
-                    y = directY + Math.sin(perpAngle) * pathVariation;
-                    
-                    x = Math.max(20, Math.min(x, this.containerWidth - size - 20));
-                    y = Math.max(20, Math.min(y, this.containerHeight - size - 20));
-                    
-                    const distanceFromBall = Math.sqrt((x + size/2 - ballX) ** 2 + (y + size/2 - ballY) ** 2);
-                    
-                    // FIXED: Proper funnel collision detection using obstacle center and both radii
-                    const distanceFromFunnel = Math.sqrt(
-                        (x + size/2 - funnelCenterX) ** 2 + (y + size/2 - funnelCenterY) ** 2
-                    ) - this.getCurrentConfig().funnelSize / 2 - size / 2;
-                    
-                    let tooCloseToOtherObstacles = false;
-                    this.obstacles.forEach(otherObstacle => {
-                        const otherRect = otherObstacle.element.getBoundingClientRect();
-                        const containerRect = this.gameContainer.getBoundingClientRect();
-                        const otherX = otherRect.left - containerRect.left;
-                        const otherY = otherRect.top - containerRect.top;
-                        
-                        const distance = Math.sqrt((x + size/2 - otherX - otherObstacle.width/2) ** 2 + (y + size/2 - otherY - otherObstacle.height/2) ** 2);
-                        if (distance < (size + otherObstacle.width) / 2 + 15) {
-                            tooCloseToOtherObstacles = true;
-                        }
-                    });
-                    
- // Enhanced funnel clearance - check rectangular overlap
-const currentFunnelSize = this.getCurrentConfig().funnelSize;
-const obstacleLeft = x;
-const obstacleRight = x + size;
-const obstacleTop = y;
-const obstacleBottom = y + size;
-
-const funnelLeft = this.funnelX - 20; // 20px buffer
-const funnelRight = this.funnelX + currentFunnelSize + 20;
-const funnelTop = this.funnelY - 20;
-const funnelBottom = this.funnelY + currentFunnelSize + 20;
-
-const hasRectangularOverlap = !(
-    obstacleRight < funnelLeft ||
-    obstacleLeft > funnelRight ||
-    obstacleBottom < funnelTop ||
-    obstacleTop > funnelBottom
-);
-
-if (distanceFromBall >= 50 && 
-    !hasRectangularOverlap && 
-    !tooCloseToOtherObstacles) {
-    validPosition = true;
-}
-                    
-                    attempts++;
-                }
-                
-                if (!validPosition) {
-                    const margin = 30;
-                    x = margin + Math.random() * (this.containerWidth - 2 * margin - size);
-                    y = margin + Math.random() * (this.containerHeight - 2 * margin - size);
-                }
-                
-                obstacle.style.left = x + 'px';
-                obstacle.style.top = y + 'px';
-                
-                this.gameContainer.appendChild(obstacle);
-                this.obstacles.push({ element: obstacle, x, y, width: size, height: size, isMoving });
-            }
-            clearObstacles() {
-                this.obstacles.forEach(obs => obs.element.remove());
-                this.obstacles = [];
-            }
-            
-            clearParticles() {
-                this.particles.forEach(particle => particle.element.remove());
-                this.particles = [];
-            }
-            
-            clearBallTrail() {
-                // NEW: Clear reusable trail elements
-                this.ballTrailElements.forEach(element => element.remove());
-                this.ballTrailElements = [];
-            }
-            
-            updateDifficultyBadge(difficulty) {
-                const badge = document.getElementById('difficultyBadge');
-                badge.className = `difficulty-badge difficulty-${difficulty}`;
-                badge.textContent = difficulty.toUpperCase();
-            }
-            
-            updateUI() {
-                document.getElementById('level').textContent = this.level;
-                document.getElementById('score').textContent = this.score;
-                document.getElementById('bestScore').textContent = this.bestScore;
-                document.getElementById('achievementCount').textContent = this.achievements.length;
-                
-                const progress = Math.min((this.level / this.levelConfigs.length) * 100, 100);
-                document.getElementById('progressLevel').textContent = Math.round(progress) + '%';
-                document.getElementById('progressFill').style.width = progress + '%';
-            }
-            
-            async requestPermission() {
-                try {
-                    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                        const permission = await DeviceOrientationEvent.requestPermission();
-                        if (permission === 'granted') {
-                            this.startGame();
-                        }
-                    } else {
-                        this.startGame();
-                    }
-                } catch (error) {
-                    console.error('Permission request failed:', error);
-                    this.startGame();
-                }
-            }
-            
-            startGame() {
-                this.gameRunning = true;
-                this.gamePaused = false;
-                this.levelCompleting = false; // Reset flag
-                this.startButton.style.display = 'none';
-                document.getElementById('menuButtons').style.display = 'flex';
-                
-                // Add device orientation and keyboard controls
-                window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
-                window.addEventListener('keydown', (e) => this.handleKeyboard(e));
-                
-                this.gameLoop();
-            }
-            
-            handleOrientation(event) {
-                if (!this.gameRunning || this.gamePaused) return;
-                
-                const gamma = event.gamma || 0;
-                const beta = event.beta || 0;
-                
-                const config = this.getCurrentConfig();
-                const sensitivity = (this.settings.sensitivity / 100) * this.sensitivity * config.ballSpeed;
-                
-                this.ballVelX += gamma * sensitivity * 0.1;
-                this.ballVelY += beta * sensitivity * 0.1;
-                
-                // NEW: Apply velocity cap
-                this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
-                this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
-            }
-            
-            handleKeyboard(event) {
-                if (!this.gameRunning || this.gamePaused) return;
-                
-                const config = this.getCurrentConfig();
-                const force = (this.settings.sensitivity / 100) * 0.5 * config.ballSpeed;
-                
-                switch(event.key) {
-                    case 'ArrowLeft': 
-                        this.ballVelX -= force; 
-                        this.ballVelX = Math.max(-this.maxVelocity, this.ballVelX);
-                        break;
-                    case 'ArrowRight': 
-                        this.ballVelX += force; 
-                        this.ballVelX = Math.min(this.maxVelocity, this.ballVelX);
-                        break;
-                    case 'ArrowUp': 
-                        this.ballVelY -= force; 
-                        this.ballVelY = Math.max(-this.maxVelocity, this.ballVelY);
-                        break;
-                    case 'ArrowDown': 
-                        this.ballVelY += force; 
-                        this.ballVelY = Math.min(this.maxVelocity, this.ballVelY);
-                        break;
-                    case ' ': 
-                        event.preventDefault();
-                        if (this.gamePaused) this.resumeGame();
-                        else this.pauseGame();
-                        break;
-                }
-            }
-            gameLoop() {
-                if (!this.gameRunning || this.gamePaused) {
-                    if (this.gameRunning) {
-                        requestAnimationFrame(() => this.gameLoop());
-                    }
-                    return;
-                }
-                
-                // NEW: Track if ball is stuck and show emergency center
-                const currentPosition = { x: this.ballX, y: this.ballY };
-                const distanceMoved = Math.sqrt(
-                    (currentPosition.x - this.lastBallPosition.x) ** 2 + 
-                    (currentPosition.y - this.lastBallPosition.y) ** 2
-                );
-                
-                if (distanceMoved < 0.5) {
-                    this.stuckTimer++;
-                    if (this.stuckTimer > 300) { // 5 seconds at 60fps
-                        // this.emergencyCenter.classList.add('show');
-                    }
-                } else {
-                    this.stuckTimer = 0;
-                    // this.emergencyCenter.classList.remove('show');
-                }
-                
-                this.lastBallPosition = { ...currentPosition };
-                
-                // Apply physics
-                this.ballVelX *= this.friction;
-                this.ballVelY *= this.friction;
-                
-                this.ballX += this.ballVelX;
-                this.ballY += this.ballVelY;
-                
-                // Wall collisions with enhanced bounce and feedback - fixed tunneling bug
-let wallCollision = false;
-if (this.ballX <= 0) {
-    this.ballX = 0;
-    this.ballVelX = Math.abs(this.ballVelX) * 0.7; // Force positive direction
-    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-    wallCollision = true;
-}
-    if (this.ballX >= this.containerWidth - this.ballSize) {
-    this.ballX = this.containerWidth - this.ballSize;
-    this.ballVelX = -Math.abs(this.ballVelX) * 0.7; // Force negative direction
-    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-    wallCollision = true;
-}
-if (this.ballY <= 0) {
-    this.ballY = 0;
-    this.ballVelY = Math.abs(this.ballVelY) * 0.7; // Force positive direction
-    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-    wallCollision = true;
-}
-if (this.ballY >= this.containerHeight - this.ballSize) {
-    this.ballY = this.containerHeight - this.ballSize;
-    this.ballVelY = -Math.abs(this.ballVelY) * 0.7; // Force upward (negative) direction
-    this.createParticles(this.ballX, this.ballY, '#ff6b6b');
-    wallCollision = true;
-}                
-                // NEW: Enhanced wall collision feedback
-                if (wallCollision) {
-                    this.gameContainer.classList.add('collision-wall');
-                    setTimeout(() => this.gameContainer.classList.remove('collision-wall'), 300);
-                    
-                    // Haptic feedback
-                    if (this.settings.haptic && navigator.vibrate) {
-                        navigator.vibrate(50);
-                    }
-                }
-                
-                // Update ball trail if enabled
-                if (this.settings.trail) {
-                    this.updateBallTrailOptimized();
-                }
-                
-                // Update ball position
-                this.ball.style.left = this.ballX + 'px';
-                this.ball.style.top = this.ballY + 'px';
-                
-                // Check obstacle collisions
-                this.checkObstacleCollision();
-                
-                // Check funnel collision
-                this.checkFunnelCollision();
-                
-                requestAnimationFrame(() => this.gameLoop());
-            }
-            
-            checkObstacleCollision() {
-                this.obstacles.forEach(obs => {
-                    const rect = obs.element.getBoundingClientRect();
-                    const containerRect = this.gameContainer.getBoundingClientRect();
-                    
-                    const obsX = rect.left - containerRect.left;
-                    const obsY = rect.top - containerRect.top;
-                    
-                    if (this.ballX < obsX + obs.width &&
-                        this.ballX + this.ballSize > obsX &&
-                        this.ballY < obsY + obs.height &&
-                        this.ballY + this.ballSize > obsY) {
-                        
-                        // Enhanced collision response
-                        this.ballVelX *= -0.5;
-                        this.ballVelY *= -0.5;
-                        
-                        // NEW: Different particle effects for different collision types
-                        this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#d69e2e', 8);
-                        
-                        // Enhanced visual feedback
-                        obs.element.classList.add('collision-obstacle');
-                        setTimeout(() => obs.element.classList.remove('collision-obstacle'), 300);
-                        
-                        this.gameContainer.classList.add('shake');
-                        setTimeout(() => this.gameContainer.classList.remove('shake'), 300);
-                        
-                        // NEW: Haptic feedback for obstacle collision
-                        if (this.settings.haptic && navigator.vibrate) {
-                            navigator.vibrate([30, 10, 30]);
-                        }
-                        
-                        // Push ball away from obstacle center
-                        const centerX = obsX + obs.width / 2;
-                        const centerY = obsY + obs.height / 2;
-                        const ballCenterX = this.ballX + this.ballSize / 2;
-                        const ballCenterY = this.ballY + this.ballSize / 2;
-                        
-                        const dx = ballCenterX - centerX;
-                        const dy = ballCenterY - centerY;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        
-                        if (distance > 0) {
-                            this.ballVelX += (dx / distance) * 2;
-                            this.ballVelY += (dy / distance) * 2;
-                            
-                            // Apply velocity cap after collision
-                            this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
-                            this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
-                        }
-                        
-                        // Track collision for level attempt tracking
-                        this.levelAttempts++;
-                        this.checkSkipLevelAvailability();
-                    }
-                });
-            }
-            
-            checkFunnelCollision() {
-                if (this.levelCompleting) return;
-                
-                const config = this.getCurrentConfig();
-                const funnelSize = Math.max(config.funnelSize, 30);
-                const funnelCenterX = this.funnelX + funnelSize / 2;
-                const funnelCenterY = this.funnelY + funnelSize / 2;
-                const ballCenterX = this.ballX + this.ballSize / 2;
-                const ballCenterY = this.ballY + this.ballSize / 2;
-                
-                const distance = Math.sqrt(
-                    (ballCenterX - funnelCenterX) ** 2 + 
-                    (ballCenterY - funnelCenterY) ** 2
-                );
-                
-                if (distance < funnelSize / 2 - 5) {
-                    this.levelComplete();
-                }
-            }
-            
-            checkSkipLevelAvailability() {
-                // NEW: Show skip option after multiple attempts
-                if (this.levelAttempts >= 10) {
-                    document.getElementById('skipLevelHint').classList.add('show');
-                    document.getElementById('skipButton').style.display = 'inline-block';
-                }
-            }
-            
-            skipLevel() {
-                // NEW: Skip level functionality
-                if (this.levelAttempts < 10) return;
-                
-                if (confirm('Skip this level? You won\'t get points for it.')) {
-                    this.level++;
-                    
-                    if (this.level > this.levelConfigs.length) {
-                        this.endGame();
-                        return;
-                    }
-                    
-                    this.saveGame();
-                    this.updateUI();
-                    this.setupLevel();
-                    
-                    // Show notification
-                    this.showNotification('Level Skipped', 'No points awarded', 2000);
-                }
-            }
-            levelComplete() {
-                if (this.levelCompleting) return;
-                this.levelCompleting = true;
-                
-                // Enhanced visual feedback
-                this.gameContainer.classList.add('pulse');
-                setTimeout(() => this.gameContainer.classList.remove('pulse'), 500);
-                
-                // Calculate score
-                const levelBonus = this.level * 100;
-                const timeBonus = 0;
-                const totalBonus = levelBonus + timeBonus;
-                
-                this.score += totalBonus;
-                
-                // Update best score with error handling
-                if (this.score > this.bestScore) {
-                    this.bestScore = this.score;
-                    try {
-                        localStorage.setItem('tiltSphereBest', this.bestScore.toString());
-                    } catch (error) {
-                        console.warn('Failed to save best score:', error);
-                    }
-                }
-                
-                // NEW: Enhanced celebration particles
-                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#68d391', 20);
-                this.createParticles(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '#ffd700', 12);
-                
-                // NEW: Haptic feedback for level completion
-                if (this.settings.haptic && navigator.vibrate) {
-                    navigator.vibrate([100, 50, 100, 50, 200]);
-                }
-                
-                // Check for achievements before advancing level
-                this.checkAchievements();
-                
-                // Advance to next level
-                this.level++;
-                
-                // Check if game complete
-                if (this.level > this.levelConfigs.length) {
-                    this.endGame();
-                    return;
-                }
-                
-                // Auto-save progress
-this.saveGame();
-
-// Update UI
-this.updateUI();
-
-// Animate ball into funnel, then setup next level
-this.animateBallIntoFunnel(() => {
-    this.setupLevel();
-    this.levelCompleting = false;
-});
-            }
-            endGame() {
-                this.gameRunning = false;
-                this.levelCompleting = false;
-                
-                // NEW: Enhanced game completion message
-                const message = `🎉 Congratulations! 🎉\n\nYou completed all ${this.levelConfigs.length} levels!\n\nFinal Score: ${this.score}\nBest Score: ${this.bestScore}\n\nYou are a TiltSphere Master!`;
-                alert(message);
-                
-                // Reset for replay
-                this.level = 1;
-                this.score = 0;
-                this.startButton.style.display = 'block';
-                this.startButton.textContent = 'PLAY AGAIN';
-                document.getElementById('menuButtons').style.display = 'none';
-                this.setupLevel();
-                this.updateUI();
-            }
-            
-            pauseGame(autoPause = false) {
-                if (!this.gameRunning) return;
-                
-                this.gamePaused = true;
-                
-                // NEW: Enhanced pause overlay instead of alert
-                this.pausedOverlay.classList.add('show');
-                
-                if (autoPause) {
-                    this.pausedOverlay.querySelector('p').textContent = 'Game auto-paused - Click to resume';
-                } else {
-                    this.pausedOverlay.querySelector('p').textContent = 'Click anywhere to resume';
-                }
-            }
-            
-            resumeGame() {
-                if (!this.gamePaused) return;
-                
-                this.gamePaused = false;
-                this.pausedOverlay.classList.remove('show');
-                
-                // Reset ball velocity to prevent accumulated motion
-                this.ballVelX = 0;
-                this.ballVelY = 0;
-                
-                // Reset pause text
-                this.pausedOverlay.querySelector('p').textContent = 'Click anywhere to resume';
-            }
-            
-            resetProgress() {
-                if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
-                    // Enhanced cleanup with error handling
-                    try {
-                        localStorage.removeItem('tiltSphereSave');
-                        localStorage.removeItem('tiltSphereBest');
-                        localStorage.removeItem('tiltSphereAchievements');
-                        localStorage.removeItem('tiltSphereSettings');
-                    } catch (error) {
-                        console.warn('Failed to clear some save data:', error);
-                    }
-                    
-                    this.level = 1;
-                    this.score = 0;
-                    this.bestScore = 0;
-                    this.achievements = [];
-                    this.levelAttempts = 0;
-                    this.gameRunning = false;
-                    this.levelCompleting = false;
-                    
-                    // Reset settings to defaults
-                    this.settings = {
-                        sound: true,
-                        haptic: true,
-                        trail: true,
-                        sensitivity: 50,
-                        autoPause: true
-                    };
-                    
-                    this.startButton.style.display = 'block';
-                    this.startButton.textContent = 'START GAME';
-                    document.getElementById('menuButtons').style.display = 'none';
-                    
-                    // Hide skip elements
-                    document.getElementById('skipLevelHint').classList.remove('show');
-                    document.getElementById('skipButton').style.display = 'none';
-                    // this.emergencyCenter.classList.remove('show');
-                    
-                    this.setupLevel();
-                    this.updateUI();
-                    
-                    document.getElementById('saveStatus').textContent = 'Progress reset';
-                }
-            }
-            createParticles(x, y, color, count = 8) {
-                // NEW: Performance-aware particle creation
-                const maxParticles = window.devicePixelRatio > 1 ? 30 : 50; // Fewer on high-DPI displays
-                if (this.particles.length > maxParticles) return;
-                
-                for (let i = 0; i < count; i++) {
-                    const particle = document.createElement('div');
-                    particle.className = 'particle';
-                    particle.style.background = color;
-                    particle.style.left = x + 'px';
-                    particle.style.top = y + 'px';
-                    
-                    const angle = (Math.PI * 2 * i) / count;
-                    const velocity = 30 + Math.random() * 20;
-                    const dx = Math.cos(angle) * velocity;
-                    const dy = Math.sin(angle) * velocity;
-                    
-                    particle.style.setProperty('--dx', dx + 'px');
-                    particle.style.setProperty('--dy', dy + 'px');
-                    particle.classList.add('particle-explosion');
-                    
-                    this.gameContainer.appendChild(particle);
-                    this.particles.push({ element: particle, life: 0.8 });
-                    
-                    setTimeout(() => {
-                        if (particle.parentNode) {
-                            particle.remove();
-                        }
-                        this.particles = this.particles.filter(p => p.element !== particle);
-                    }, 800);
-                }
-            }
-            
-            updateBallTrailOptimized() {
-                // NEW: Optimized trail system that reuses DOM elements
-                this.ballTrail.push({
-                    x: this.ballX + this.ballSize/2,
-                    y: this.ballY + this.ballSize/2,
-                    life: 1.0
-                });
-                
-                // Keep trail short for performance
-                if (this.ballTrail.length > 8) {
-                    this.ballTrail.shift();
-                }
-                
-                // Reuse existing trail elements instead of recreating
-                while (this.ballTrailElements.length < this.ballTrail.length) {
-                    const trail = document.createElement('div');
-                    trail.className = 'ball-trail';
-                    this.gameContainer.appendChild(trail);
-                    this.ballTrailElements.push(trail);
-                }
-                
-                // Hide excess elements
-                for (let i = this.ballTrail.length; i < this.ballTrailElements.length; i++) {
-                    this.ballTrailElements[i].style.display = 'none';
-                }
-                
-                // Update visible trail elements
-                this.ballTrail.forEach((point, index) => {
-                    const trail = this.ballTrailElements[index];
-                    if (trail) {
-                        trail.style.display = 'block';
-                        trail.style.left = (point.x - 7.5) + 'px';
-                        trail.style.top = (point.y - 7.5) + 'px';
-                        trail.style.opacity = (index / this.ballTrail.length) * 0.7;
-                        trail.style.transform = `scale(${0.3 + (index / this.ballTrail.length) * 0.7})`;
-                    }
-                });
-            }
-            
-            showNotification(title, description, duration = 3000) {
-                // NEW: General notification system
-                const notification = document.createElement('div');
-                notification.className = 'achievement-notification';
-                notification.innerHTML = `
-                    <div class="achievement-title">${title}</div>
-                    <div class="achievement-description">${description}</div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // Animate in
-                setTimeout(() => notification.classList.add('show'), 100);
-                
-                // Animate out and remove
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.remove();
-                        }
-                    }, 500);
-                }, duration);
-            }
-            
-            showAchievementNotification(achievementName) {
-                // NEW: Achievement notification system
-                const achievementData = this.getAchievementData(achievementName);
-                if (!achievementData) return;
-                
-                const notification = this.achievementNotification;
-                document.getElementById('achievementTitle').textContent = achievementData.title;
-                document.getElementById('achievementDescription').textContent = achievementData.description;
-                
-                notification.classList.add('show');
-                
-                // Auto-hide after 4 seconds
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 4000);
-                
-                // Haptic feedback for achievement
-                if (this.settings.haptic && navigator.vibrate) {
-                    navigator.vibrate([200, 100, 200]);
-                }
-            }
-            
-            getAchievementData(achievementName) {
-                // NEW: Achievement data mapping
-                const achievements = {
-                    'first_win': { title: '🎉 First Victory!', description: 'Completed your first level!' },
-                    'level_10': { title: '🔟 Ten Levels Down!', description: 'Reached level 10' },
-                    'level_25': { title: '🌟 Quarter Century!', description: 'Reached level 25' },
-                    'level_50': { title: '⭐ Halfway There!', description: 'Reached level 50' },
-                    'level_75': { title: '💫 Three Quarters!', description: 'Reached level 75' },
-                    'level_100': { title: '💯 Century Mark!', description: 'Reached level 100' },
-                    'level_125': { title: '🚀 Beyond Limits!', description: 'Reached level 125' },
-                    'level_150': { title: '⚡ Lightning Fast!', description: 'Reached level 150' },
-                    'level_175': { title: '🌈 Almost There!', description: 'Reached level 175' },
-                    'level_200': { title: '🏆 Legendary Status!', description: 'Reached level 200' },
-                    'level_225': { title: '👑 Royal Achievement!', description: 'Reached level 225' },
-                    'level_250': { title: '🎯 Perfect Score!', description: 'Completed all levels!' },
-                    'tier_easy': { title: '🟢 Easy Tier Complete!', description: 'Mastered the basics' },
-                    'tier_medium': { title: '🟡 Medium Tier Complete!', description: 'Building skills' },
-                    'tier_hard': { title: '🟠 Hard Tier Complete!', description: 'Getting challenging' },
-                    'tier_expert': { title: '🔴 Expert Tier Complete!', description: 'Expert level achieved' },
-                    'tier_legendary': { title: '🟣 Legendary Tier Complete!', description: 'Legendary skills' },
-                    'tier_master': { title: '⚫ Master Tier Complete!', description: 'Master level reached' },
-                    'tier_grandmaster': { title: '🔵 Grandmaster Tier Complete!', description: 'Grandmaster achieved' },
-                    'tier_ultimate': { title: '⚪ Ultimate Tier Complete!', description: 'Ultimate mastery!' },
-                    'score_5k': { title: '💰 5K Points!', description: 'Scored 5,000 points' },
-                    'score_10k': { title: '💎 10K Points!', description: 'Scored 10,000 points' },
-                    'score_25k': { title: '🏅 25K Points!', description: 'Scored 25,000 points' },
-                    'score_50k': { title: '🥈 50K Points!', description: 'Scored 50,000 points' },
-                    'score_100k': { title: '🥇 100K Points!', description: 'Scored 100,000 points' }
-                };
-                
-                return achievements[achievementName];
-            }
-            saveGame() {
-                const saveData = {
-                    level: this.level,
-                    score: this.score,
-                    achievements: this.achievements,
-                    timestamp: Date.now(),
-                    version: '2.0' // NEW: Version tracking for future compatibility
-                };
-                
-                try {
-                    localStorage.setItem('tiltSphereSave', JSON.stringify(saveData));
-                    
-                    // Show save indicator
-                    const indicator = document.getElementById('saveIndicator');
-                    indicator.classList.add('show');
-                    setTimeout(() => indicator.classList.remove('show'), 2000);
-                    
-                    document.getElementById('saveStatus').textContent = `Last saved: ${new Date().toLocaleTimeString()}`;
-                } catch (error) {
-                    console.warn('Failed to save game:', error);
-                    document.getElementById('saveStatus').textContent = 'Save failed - storage full?';
-                }
-            }
-            
-            loadGame() {
-                try {
-                    const saveData = localStorage.getItem('tiltSphereSave');
-                    if (saveData) {
-                        const data = JSON.parse(saveData);
-                        
-                        // NEW: Version compatibility check
-                        const version = data.version || '1.0';
-                        
-                        this.level = data.level || 1;
-                        this.score = data.score || 0;
-                        this.achievements = data.achievements || [];
-                        
-                        const saveTime = new Date(data.timestamp).toLocaleString();
-                        document.getElementById('saveStatus').textContent = `Loaded save from: ${saveTime}`;
-                        
-                        // NEW: Migration for old saves
-                        if (version === '1.0') {
-                            this.migrateOldSave(data);
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Failed to load save data:', error);
-                    document.getElementById('saveStatus').textContent = 'Failed to load save data';
-                }
-            }
-            
-            migrateOldSave(data) {
-                // NEW: Handle migration from older save formats
-                console.log('Migrating save data from version 1.0 to 2.0');
-                
-                // Ensure achievements array exists
-                if (!this.achievements) {
-                    this.achievements = [];
-                }
-                
-                // Auto-save migrated data
-                this.saveGame();
-            }
-            
-            checkAchievements() {
-                // NEW: Enhanced achievement system with notifications
-                const newAchievements = [];
-                
-                // First Win
-                if (this.level === 2 && !this.achievements.includes('first_win')) {
-                    newAchievements.push('first_win');
-                    this.achievements.push('first_win');
-                }
-                
-                // Level Milestones
-                const milestones = [10, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250];
-                milestones.forEach(milestone => {
-                    const achievementName = `level_${milestone}`;
-                    if (this.level === milestone + 1 && !this.achievements.includes(achievementName)) {
-                        newAchievements.push(achievementName);
-                        this.achievements.push(achievementName);
-                    }
-                });
-                
-                // Tier Completion Achievements
-                const tierCompletions = [
-                    { level: 21, name: 'tier_easy' },
-                    { level: 41, name: 'tier_medium' },
-                    { level: 61, name: 'tier_hard' },
-                    { level: 81, name: 'tier_expert' },
-                    { level: 101, name: 'tier_legendary' },
-                    { level: 151, name: 'tier_master' },
-                    { level: 201, name: 'tier_grandmaster' },
-                    { level: 251, name: 'tier_ultimate' }
-                ];
-                
-                tierCompletions.forEach(tier => {
-                    if (this.level === tier.level && !this.achievements.includes(tier.name)) {
-                        newAchievements.push(tier.name);
-                        this.achievements.push(tier.name);
-                    }
-                });
-                
-                // Score milestones
-                const scoreAchievements = [
-                    { score: 5000, name: 'score_5k' },
-                    { score: 10000, name: 'score_10k' },
-                    { score: 25000, name: 'score_25k' },
-                    { score: 50000, name: 'score_50k' },
-                    { score: 100000, name: 'score_100k' }
-                ];
-                
-                scoreAchievements.forEach(achievement => {
-                    if (this.score >= achievement.score && !this.achievements.includes(achievement.name)) {
-                        newAchievements.push(achievement.name);
-                        this.achievements.push(achievement.name);
-                    }
-                });
-                
-                // NEW: Show notifications for new achievements
-                if (newAchievements.length > 0) {
-                    try {
-                        localStorage.setItem('tiltSphereAchievements', JSON.stringify(this.achievements));
-                    } catch (error) {
-                        console.warn('Failed to save achievements:', error);
-                    }
-                    
-                    // Show first achievement immediately, queue others
-                    this.showAchievementNotification(newAchievements[0]);
-                    
-                    // Queue additional achievements with delays
-                    newAchievements.slice(1).forEach((achievement, index) => {
-                        setTimeout(() => {
-                            this.showAchievementNotification(achievement);
-                        }, (index + 1) * 5000);
-                    });
-                }
-            }
-            showSettings() {
-                // Update UI with current settings
-                document.getElementById('sensitivitySlider').value = this.settings.sensitivity;
-                document.getElementById('sensitivityValue').textContent = this.settings.sensitivity;
-                document.getElementById('soundToggle').checked = this.settings.sound;
-                document.getElementById('hapticToggle').checked = this.settings.haptic;
-                document.getElementById('trailToggle').checked = this.settings.trail;
-                document.getElementById('autoPauseToggle').checked = this.settings.autoPause;
-                
-                // Add slider event listener
-                const slider = document.getElementById('sensitivitySlider');
-                slider.oninput = () => {
-                    document.getElementById('sensitivityValue').textContent = slider.value;
-                };
-                
-                document.getElementById('settingsModal').style.display = 'flex';
-            }
-            
-            closeSettings() {
-                document.getElementById('settingsModal').style.display = 'none';
-            }
-            
-            saveSettings() {
-                // Get values from UI
-                this.settings.sensitivity = parseInt(document.getElementById('sensitivitySlider').value);
-                this.settings.sound = document.getElementById('soundToggle').checked;
-                this.settings.haptic = document.getElementById('hapticToggle').checked;
-                this.settings.trail = document.getElementById('trailToggle').checked;
-                this.settings.autoPause = document.getElementById('autoPauseToggle').checked;
-                
-                // Save to localStorage with error handling
-                try {
-                    localStorage.setItem('tiltSphereSettings', JSON.stringify(this.settings));
-                    
-                    // Close modal
-                    this.closeSettings();
-                    
-                    // Show confirmation
-                    document.getElementById('saveStatus').textContent = 'Settings saved!';
-                    setTimeout(() => {
-                        const currentStatus = document.getElementById('saveStatus').textContent;
-                        if (currentStatus.includes('Settings saved!')) {
-                            document.getElementById('saveStatus').textContent = currentStatus.replace('Settings saved!', '').trim();
-                        }
-                    }, 3000);
-                } catch (error) {
-                    console.warn('Failed to save settings:', error);
-                    alert('Failed to save settings. Storage may be full.');
-                }
-            }
+        if (!valid) {
+            x = 30 + Math.random() * (this.W - 60 - size);
+            y = 30 + Math.random() * (this.H - 60 - size);
         }
-        
-        // Initialize the game when page loads
-        let game;
-        
-        // NEW: Better initialization with error handling
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                game = new TiltBallGame();
-            } catch (error) {
-                console.error('Failed to initialize game:', error);
-                
-                // Fallback error display
-                document.body.innerHTML = `
-                    <div style="color: white; text-align: center; padding: 50px;">
-                        <h2>Game Failed to Load</h2>
-                        <p>Please refresh the page to try again.</p>
-                        <p style="font-size: 12px; margin-top: 20px;">Error: ${error.message}</p>
-                    </div>
-                `;
-            }
+
+        // Moving obstacle motion parameters
+        const dirs      = ['x','y','diag'];
+        const dir       = dirs[Math.floor(Math.random()*3)];
+        const speed     = 0.3 + Math.random() * 0.5;   // units per frame equivalent
+        const range     = 40  + Math.random() * 60;
+        const phase     = Math.random() * Math.PI * 2;  // start offset
+
+        this.obstacles.push({ x, y, w:size, h:size, isMoving, dir, speed, range, startX:x, startY:y, phase });
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  EVENT LISTENERS
+    // ─────────────────────────────────────────────────────────
+    setupEventListeners() {
+        this.startButton.addEventListener('click', () => this.requestPermission());
+        this.pausedOverlay.addEventListener('click', () => { if (this.gamePaused) this.resumeGame(); });
+    }
+
+    setupAutoPause() {
+        window.addEventListener('blur', () => {
+            if (this.gameRunning && !this.gamePaused && this.settings.autoPause) this.pauseGame(true);
         });
-        
-        // NEW: Handle orientation lock detection
-        screen.orientation?.addEventListener('change', () => {
-            if (game && game.gameRunning && !game.gamePaused) {
-                // Brief pause to let user readjust
-                game.ballVelX = 0;
-                game.ballVelY = 0;
-            }
-        });
-        
-        // NEW: Handle visibility change for better auto-pause
         document.addEventListener('visibilitychange', () => {
-            if (game && game.gameRunning && !game.gamePaused && game.settings.autoPause) {
-                if (document.hidden) {
-                    game.pauseGame(true);
+            if (this.gameRunning && !this.gamePaused && this.settings.autoPause && document.hidden) this.pauseGame(true);
+        });
+        screen.orientation?.addEventListener('change', () => {
+            if (this.gameRunning && !this.gamePaused) { this.ballVelX = 0; this.ballVelY = 0; }
+        });
+    }
+
+    async requestPermission() {
+        try {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                const p = await DeviceOrientationEvent.requestPermission();
+                if (p === 'granted') this.startGame();
+            } else { this.startGame(); }
+        } catch(e) { this.startGame(); }
+    }
+
+    startGame() {
+        this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
+        this.startButton.style.display = 'none';
+        document.getElementById('menuButtons').style.display = 'flex';
+        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
+        window.addEventListener('keydown',           e => this.handleKeyboard(e));
+    }
+
+    handleOrientation(e) {
+        if (!this.gameRunning || this.gamePaused) return;
+        const cfg = this.getCurrentConfig();
+        const s   = (this.settings.sensitivity/100) * this.sensitivity * cfg.ballSpeed;
+        this.ballVelX += (e.gamma||0) * s * 0.1;
+        this.ballVelY += (e.beta ||0) * s * 0.1;
+        this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
+        this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
+    }
+
+    handleKeyboard(e) {
+        if (!this.gameRunning || this.gamePaused) return;
+        const cfg = this.getCurrentConfig();
+        const f   = (this.settings.sensitivity/100) * 0.5 * cfg.ballSpeed;
+        switch(e.key) {
+            case 'ArrowLeft':  this.ballVelX -= f; this.ballVelX = Math.max(-this.maxVelocity, this.ballVelX); break;
+            case 'ArrowRight': this.ballVelX += f; this.ballVelX = Math.min( this.maxVelocity, this.ballVelX); break;
+            case 'ArrowUp':    this.ballVelY -= f; this.ballVelY = Math.max(-this.maxVelocity, this.ballVelY); break;
+            case 'ArrowDown':  this.ballVelY += f; this.ballVelY = Math.min( this.maxVelocity, this.ballVelY); break;
+            case ' ':
+                e.preventDefault();
+                if (this.gamePaused) this.resumeGame(); else this.pauseGame();
+                break;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  PHYSICS UPDATE (runs inside renderLoop)
+    // ─────────────────────────────────────────────────────────
+    update() {
+        if (!this.gameRunning || this.gamePaused || this.levelCompleting) return;
+
+        this.time += 0.016; // ~60fps frame time in seconds
+
+        // Stuck detection
+        const dm = Math.hypot(this.ballX - this.lastBallPos.x, this.ballY - this.lastBallPos.y);
+        this.stuckTimer = dm < 0.5 ? this.stuckTimer + 1 : 0;
+        this.lastBallPos = { x: this.ballX, y: this.ballY };
+
+        // Physics
+        this.ballVelX *= this.friction;
+        this.ballVelY *= this.friction;
+        this.ballX    += this.ballVelX;
+        this.ballY    += this.ballVelY;
+
+        // Wall collisions
+        if (this.ballX <= 0)              { this.ballX = 0;                this.ballVelX =  Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
+        if (this.ballX >= this.W-this.ballSize) { this.ballX = this.W-this.ballSize; this.ballVelX = -Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
+        if (this.ballY <= 0)              { this.ballY = 0;                this.ballVelY =  Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
+        if (this.ballY >= this.H-this.ballSize) { this.ballY = this.H-this.ballSize; this.ballVelY = -Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
+
+        // Update moving obstacles
+        this.obstacles.forEach(o => {
+            if (!o.isMoving) return;
+            const t = this.time * o.speed * Math.PI * 2 / 3 + o.phase; // oscillate
+            if      (o.dir === 'x')    { o.x = o.startX + Math.sin(t) * o.range; }
+            else if (o.dir === 'y')    { o.y = o.startY + Math.sin(t) * o.range; }
+            else                       { o.x = o.startX + Math.sin(t) * o.range * .7;
+                                         o.y = o.startY + Math.cos(t) * o.range * .7; }
+            // clamp to arena
+            o.x = Math.max(5, Math.min(o.x, this.W - o.w - 5));
+            o.y = Math.max(5, Math.min(o.y, this.H - o.h - 5));
+        });
+
+        // Obstacle collisions
+        this.obstacles.forEach(o => {
+            if (this.ballX < o.x+o.w && this.ballX+this.ballSize > o.x &&
+                this.ballY < o.y+o.h && this.ballY+this.ballSize > o.y) {
+
+                this.ballVelX *= -.5; this.ballVelY *= -.5;
+
+                const cx = o.x+o.w/2, cy = o.y+o.h/2;
+                const bcx = this.ballX+this.ballSize/2, bcy = this.ballY+this.ballSize/2;
+                const d = Math.hypot(bcx-cx, bcy-cy);
+                if (d > 0) {
+                    this.ballVelX += ((bcx-cx)/d)*2;
+                    this.ballVelY += ((bcy-cy)/d)*2;
+                    this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
+                    this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
                 }
+
+                this.spawnParticles(bcx, bcy, o.isMoving ? '#9f7aea' : '#d69e2e', 8);
+                this.shakeCanvas();
+                if (this.settings.haptic && navigator.vibrate) navigator.vibrate([30,10,30]);
+
+                this.levelAttempts++;
+                this.checkSkipLevelAvailability();
             }
         });
-    </script>
+
+        // Funnel collision
+        if (!this.levelCompleting) {
+            const cfg = this.getCurrentConfig();
+            const fs  = Math.max(cfg.funnelSize, 30);
+            const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
+            const bcx = this.ballX + this.ballSize/2, bcy = this.ballY + this.ballSize/2;
+            if (Math.hypot(bcx-fcx, bcy-fcy) < fs/2 - 5) {
+                this.levelComplete();
+            }
+        }
+
+        // Update trail
+        if (this.settings.trail) {
+            this.trail.push({ x: this.ballX+this.ballSize/2, y: this.ballY+this.ballSize/2, alpha:1 });
+            if (this.trail.length > 20) this.trail.shift();
+        }
+
+        // Age particles
+        this.particles = this.particles.filter(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += .15; // gravity
+            p.life--;
+            return p.life > 0;
+        });
+
+        // Age shockwaves
+        this.shockwaves = this.shockwaves.filter(s => {
+            s.radius += 4; s.life--;
+            return s.life > 0;
+        });
+
+        // Age score popups
+        this.scorePopups = this.scorePopups.filter(p => {
+            p.y -= 1; p.life--;
+            return p.life > 0;
+        });
+
+        // Funnel pulse
+        this.funnelPulsePhase += 0.05;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  CANVAS SHAKE
+    // ─────────────────────────────────────────────────────────
+    shakeCanvas() {
+        if (this._shakeTimer) return;
+        let t = 0;
+        const shake = () => {
+            t++;
+            this.shakeOffsetX = (Math.random()-.5) * 6 * (1 - t/8);
+            this.shakeOffsetY = (Math.random()-.5) * 6 * (1 - t/8);
+            if (t < 8) this._shakeTimer = requestAnimationFrame(shake);
+            else { this.shakeOffsetX = 0; this.shakeOffsetY = 0; this._shakeTimer = null; }
+        };
+        this._shakeTimer = requestAnimationFrame(shake);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  PARTICLE SPAWNING
+    // ─────────────────────────────────────────────────────────
+    spawnParticles(x, y, color, count=8) {
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI*2*i)/count + Math.random()*.3;
+            const speed = 2 + Math.random()*3;
+            this.particles.push({
+                x, y,
+                vx: Math.cos(angle)*speed,
+                vy: Math.sin(angle)*speed - Math.random()*2,
+                life: 20 + Math.random()*20,
+                color,
+                size: 2 + Math.random()*3
+            });
+        }
+    }
+
+    spawnExplosion(x, y) {
+        // Big burst for level complete
+        const colors = ['#68d391','#ffd700','#4fd1c7','#f56565','#63b3ed'];
+        for (let i = 0; i < 40; i++) {
+            const angle = Math.random()*Math.PI*2;
+            const speed = 2 + Math.random()*6;
+            this.particles.push({
+                x, y,
+                vx: Math.cos(angle)*speed,
+                vy: Math.sin(angle)*speed - Math.random()*3,
+                life: 40 + Math.random()*30,
+                color: colors[Math.floor(Math.random()*colors.length)],
+                size: 3 + Math.random()*4
+            });
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  RENDER — called every animation frame
+    // ─────────────────────────────────────────────────────────
+    renderLoop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.renderLoop());
+    }
+
+    draw() {
+        const ctx = this.ctx;
+        const sx  = this.shakeOffsetX || 0;
+        const sy  = this.shakeOffsetY || 0;
+
+        // Clear
+        ctx.clearRect(0, 0, this.W, this.H);
+
+        // Arena background
+        const bg = ctx.createRadialGradient(175,175,10, 175,175,250);
+        bg.addColorStop(0, '#2d3748');
+        bg.addColorStop(1, '#1a202c');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, this.W, this.H);
+
+        // Subtle grid
+        this.drawGrid(ctx);
+
+        ctx.save();
+        ctx.translate(sx, sy);
+
+        // Draw trail
+        this.drawTrail(ctx);
+
+        // Draw funnel (target)
+        this.drawFunnel(ctx);
+
+        // Draw obstacles
+        this.drawObstacles(ctx);
+
+        // Draw particles
+        this.drawParticles(ctx);
+
+        // Draw shockwaves
+        this.drawShockwaves(ctx);
+
+        // Draw ball (on top of everything except popups)
+        if (this.gameRunning || !this.gameRunning) { // always draw
+            this.drawBall(ctx);
+        }
+
+        // Draw score popups
+        this.drawScorePopups(ctx);
+
+        ctx.restore();
+    }
+
+    drawGrid(ctx) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(99,179,237,0.04)';
+        ctx.lineWidth   = 1;
+        for (let x = 0; x <= this.W; x += 35) {
+            ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,this.H); ctx.stroke();
+        }
+        for (let y = 0; y <= this.H; y += 35) {
+            ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(this.W,y); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    drawTrail(ctx) {
+        if (!this.trail.length) return;
+        this.trail.forEach((pt, i) => {
+            const t     = i / this.trail.length;
+            const r     = 2 + t * 7;          // grows toward ball
+            const alpha = t * 0.55;
+
+            ctx.save();
+            const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r*2);
+            g.addColorStop(0, `rgba(245,101,101,${alpha})`);
+            g.addColorStop(1, `rgba(245,101,101,0)`);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, r*2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    drawFunnel(ctx) {
+        const cfg = this.getCurrentConfig();
+        const fs  = Math.max(cfg.funnelSize, 30);
+        const cx  = this.funnelX + fs/2;
+        const cy  = this.funnelY + fs/2;
+        const r   = fs/2;
+        const pulse = 1 + Math.sin(this.funnelPulsePhase) * 0.05;
+
+        ctx.save();
+
+        // Outer glow
+        const glow = ctx.createRadialGradient(cx, cy, r*0.3, cx, cy, r*2);
+        glow.addColorStop(0, 'rgba(104,211,145,0.25)');
+        glow.addColorStop(1, 'rgba(104,211,145,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r*2*pulse, 0, Math.PI*2);
+        ctx.fill();
+
+        // Main circle
+        const grad = ctx.createRadialGradient(cx-r*.3, cy-r*.3, r*.1, cx, cy, r);
+        grad.addColorStop(0, '#68d391');
+        grad.addColorStop(0.5, '#48bb78');
+        grad.addColorStop(1, '#276749');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r*pulse, 0, Math.PI*2);
+        ctx.fill();
+
+        // Inner ring highlight
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth   = 2;
+        ctx.beginPath();
+        ctx.arc(cx-r*.15, cy-r*.15, r*.4, Math.PI*1.1, Math.PI*1.9);
+        ctx.stroke();
+
+        // Spinning dashed ring
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(this.time * 1.5);
+        ctx.setLineDash([4, 6]);
+        ctx.strokeStyle = 'rgba(104,211,145,0.6)';
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, r*pulse + 5, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Border
+        ctx.strokeStyle = '#68d391';
+        ctx.lineWidth   = 2;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r*pulse, 0, Math.PI*2);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    drawObstacles(ctx) {
+        this.obstacles.forEach(o => {
+            ctx.save();
+            ctx.translate(o.x + o.w/2, o.y + o.h/2);
+
+            if (o.isMoving) {
+                // Purple moving obstacle with glow
+                const glowG = ctx.createRadialGradient(0,0,0, 0,0, Math.max(o.w,o.h));
+                glowG.addColorStop(0, 'rgba(159,122,234,0.3)');
+                glowG.addColorStop(1, 'rgba(159,122,234,0)');
+                ctx.fillStyle = glowG;
+                ctx.fillRect(-o.w/2-8, -o.h/2-8, o.w+16, o.h+16);
+
+                const g = ctx.createLinearGradient(-o.w/2,-o.h/2, o.w/2, o.h/2);
+                g.addColorStop(0, '#553c9a');
+                g.addColorStop(1, '#805ad5');
+                ctx.fillStyle = g;
+
+                // Round rect
+                this.roundRect(ctx, -o.w/2, -o.h/2, o.w, o.h, 5);
+                ctx.fill();
+                ctx.strokeStyle = '#9f7aea';
+                ctx.lineWidth = 1.5;
+                this.roundRect(ctx, -o.w/2, -o.h/2, o.w, o.h, 5);
+                ctx.stroke();
+
+                // Pulse stripe on moving obstacles
+                const stripeAlpha = 0.2 + Math.sin(this.time*4 + o.phase)*0.15;
+                ctx.fillStyle = `rgba(255,255,255,${stripeAlpha})`;
+                ctx.fillRect(-o.w/2+2, -2, o.w-4, 4);
+
+            } else {
+                // Brown static obstacle
+                const g = ctx.createLinearGradient(-o.w/2,-o.h/2, o.w/2, o.h/2);
+                g.addColorStop(0, '#975a16');
+                g.addColorStop(1, '#744210');
+                ctx.fillStyle = g;
+                this.roundRect(ctx, -o.w/2, -o.h/2, o.w, o.h, 4);
+                ctx.fill();
+                ctx.strokeStyle = '#d69e2e';
+                ctx.lineWidth = 1;
+                this.roundRect(ctx, -o.w/2, -o.h/2, o.w, o.h, 4);
+                ctx.stroke();
+
+                // Highlight top edge
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-o.w/2+4, -o.h/2+2);
+                ctx.lineTo( o.w/2-4, -o.h/2+2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        });
+    }
+
+    // Helper: rounded rectangle path
+    roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.lineTo(x+w-r, y);
+        ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+        ctx.lineTo(x+w, y+h-r);
+        ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+        ctx.lineTo(x+r, y+h);
+        ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+        ctx.lineTo(x, y+r);
+        ctx.quadraticCurveTo(x, y, x+r, y);
+        ctx.closePath();
+    }
+
+    drawBall(ctx) {
+        const cx = this.ballX + this.ballSize/2;
+        const cy = this.ballY + this.ballSize/2;
+        const r  = this.ballSize/2;
+
+        ctx.save();
+
+        // Outer glow
+        const glow = ctx.createRadialGradient(cx, cy, r*.5, cx, cy, r*2.5);
+        glow.addColorStop(0, 'rgba(245,101,101,0.4)');
+        glow.addColorStop(1, 'rgba(245,101,101,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r*2.5, 0, Math.PI*2);
+        ctx.fill();
+
+        // Ball body
+        const speed = Math.hypot(this.ballVelX, this.ballVelY);
+        const gR = ctx.createRadialGradient(cx-r*.3, cy-r*.4, r*.1, cx, cy, r);
+        gR.addColorStop(0, '#ffffff');
+        gR.addColorStop(0.3, '#fc8181');
+        gR.addColorStop(1, '#c53030');
+        ctx.fillStyle = gR;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.fill();
+
+        // Specular highlight
+        const hl = ctx.createRadialGradient(cx-r*.3, cy-r*.35, 0, cx-r*.3, cy-r*.35, r*.5);
+        hl.addColorStop(0, 'rgba(255,255,255,0.7)');
+        hl.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = hl;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI*2);
+        ctx.fill();
+
+        // Speed-based motion blur streak
+        if (speed > 2) {
+            const mx = -this.ballVelX * 2, my = -this.ballVelY * 2;
+            const streak = ctx.createLinearGradient(cx, cy, cx+mx, cy+my);
+            streak.addColorStop(0, `rgba(245,101,101,${Math.min(speed/this.maxVelocity*.6, 0.5)})`);
+            streak.addColorStop(1, 'rgba(245,101,101,0)');
+            ctx.fillStyle = streak;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r*.8, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    drawParticles(ctx) {
+        this.particles.forEach(p => {
+            const alpha = p.life / (p.life + 10); // softer fade
+            ctx.save();
+            ctx.globalAlpha = alpha * 0.9;
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur  = 6;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    drawShockwaves(ctx) {
+        this.shockwaves.forEach(s => {
+            const t = 1 - s.life / s.maxLife;
+            ctx.save();
+            ctx.globalAlpha = (1-t) * 0.7;
+            ctx.strokeStyle = '#68d391';
+            ctx.lineWidth   = 3 * (1-t);
+            ctx.shadowColor = '#68d391';
+            ctx.shadowBlur  = 15;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.restore();
+        });
+    }
+
+    drawScorePopups(ctx) {
+        this.scorePopups.forEach(p => {
+            const t = p.life / p.maxLife;
+            ctx.save();
+            ctx.globalAlpha = t;
+            ctx.fillStyle   = '#ffd700';
+            ctx.font        = `bold ${14 + (1-t)*6}px Arial`;
+            ctx.textAlign   = 'center';
+            ctx.shadowColor = '#ffd700';
+            ctx.shadowBlur  = 10;
+            ctx.fillText(p.text, p.x, p.y);
+            ctx.restore();
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  LEVEL COMPLETE
+    // ─────────────────────────────────────────────────────────
+    levelComplete() {
+        if (this.levelCompleting) return;
+        this.levelCompleting = true;
+
+        const cfg = this.getCurrentConfig();
+        const fs  = Math.max(cfg.funnelSize, 30);
+        const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
+
+        // Shockwave rings
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                this.shockwaves.push({ x:fcx, y:fcy, radius:5, maxRadius:fs*2, life:30, maxLife:30 });
+            }, i * 150);
+        }
+
+        // Explosion burst
+        this.spawnExplosion(fcx, fcy);
+
+        // Score
+        const bonus = this.level * 100;
+        this.score += bonus;
+
+        // Score popup
+        this.scorePopups.push({ x: fcx, y: fcy - 20, text: `+${bonus}`, life: 60, maxLife: 60 });
+
+        if (this.score > this.bestScore) {
+            this.bestScore = this.score;
+            try { localStorage.setItem('tiltSphereBest', this.bestScore.toString()); } catch(e) {}
+        }
+
+        if (this.settings.haptic && navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
+
+        this.checkAchievements();
+        this.level++;
+
+        if (this.level > this.levelConfigs.length) { this.endGame(); return; }
+
+        this.saveGame();
+        this.updateUI();
+
+        // Animate ball spiralling into funnel, then setup next level
+        this.animateBallIntoFunnel(fcx, fcy, () => {
+            this.setupLevel();
+            this.levelCompleting = false;
+        });
+    }
+
+    animateBallIntoFunnel(fcx, fcy, callback) {
+        this.ballVelX = 0; this.ballVelY = 0;
+        const startTime = Date.now();
+        const duration  = 1000;
+        const initR = Math.hypot(this.ballX+this.ballSize/2 - fcx, this.ballY+this.ballSize/2 - fcy);
+
+        const animate = () => {
+            const progress = Math.min((Date.now()-startTime)/duration, 1);
+            if (progress >= 1) { setTimeout(callback, 200); return; }
+
+            const ease   = 1 - Math.pow(1-progress, 3);
+            const radius = initR * (1-ease);
+            const angle  = progress * Math.PI * 6;
+            const scale  = 1 - progress * 0.9;
+
+            this.ballX = fcx + Math.cos(angle)*radius - this.ballSize/2;
+            this.ballY = fcy + Math.sin(angle)*radius - this.ballSize/2;
+            this._ballAnimScale  = Math.max(scale, 0.05);
+            this._ballAnimOpacity = scale;
+
+            if (Math.random() < 0.3) {
+                this.spawnParticles(this.ballX+this.ballSize/2, this.ballY+this.ballSize/2, '#4fd1c7', 2);
+            }
+            requestAnimationFrame(animate);
+        };
+        animate();
+    }
+
+    // Override drawBall to respect spiral-in scale
+    drawBall(ctx) {
+        const cx = this.ballX + this.ballSize/2;
+        const cy = this.ballY + this.ballSize/2;
+        const r  = this.ballSize/2 * (this._ballAnimScale ?? 1);
+        if (r <= 0) return;
+
+        ctx.save();
+        ctx.globalAlpha = this._ballAnimOpacity ?? 1;
+
+        // Outer glow
+        const glow = ctx.createRadialGradient(cx,cy,r*.5, cx,cy,r*2.5);
+        glow.addColorStop(0, 'rgba(245,101,101,0.4)');
+        glow.addColorStop(1, 'rgba(245,101,101,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath(); ctx.arc(cx,cy,r*2.5,0,Math.PI*2); ctx.fill();
+
+        // Ball body
+        const gR = ctx.createRadialGradient(cx-r*.3,cy-r*.4,r*.1, cx,cy,r);
+        gR.addColorStop(0, '#ffffff');
+        gR.addColorStop(0.3, '#fc8181');
+        gR.addColorStop(1, '#c53030');
+        ctx.fillStyle = gR;
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+
+        // Specular highlight
+        const hl = ctx.createRadialGradient(cx-r*.3,cy-r*.35,0, cx-r*.3,cy-r*.35,r*.5);
+        hl.addColorStop(0, 'rgba(255,255,255,0.7)');
+        hl.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = hl;
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+
+        // Speed streak
+        const speed = Math.hypot(this.ballVelX, this.ballVelY);
+        if (speed > 2 && !this.levelCompleting) {
+            const mx = -this.ballVelX*2, my = -this.ballVelY*2;
+            const streak = ctx.createLinearGradient(cx,cy, cx+mx,cy+my);
+            streak.addColorStop(0, `rgba(245,101,101,${Math.min(speed/this.maxVelocity*.6,0.5)})`);
+            streak.addColorStop(1, 'rgba(245,101,101,0)');
+            ctx.fillStyle = streak;
+            ctx.beginPath(); ctx.arc(cx,cy,r*.8,0,Math.PI*2); ctx.fill();
+        }
+
+        ctx.restore();
+
+        // Reset after animation
+        if (!this.levelCompleting) {
+            this._ballAnimScale   = 1;
+            this._ballAnimOpacity = 1;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  GAME MANAGEMENT (unchanged logic from DOM version)
+    // ─────────────────────────────────────────────────────────
+    endGame() {
+        this.gameRunning = false; this.levelCompleting = false;
+        alert(`🎉 Congratulations!\n\nYou completed all ${this.levelConfigs.length} levels!\nFinal Score: ${this.score}\nBest Score: ${this.bestScore}\n\nYou are a TiltSphere Master!`);
+        this.level = 1; this.score = 0;
+        this.startButton.style.display = 'block';
+        this.startButton.textContent = 'PLAY AGAIN';
+        document.getElementById('menuButtons').style.display = 'none';
+        this.setupLevel(); this.updateUI();
+    }
+
+    pauseGame(auto=false) {
+        if (!this.gameRunning) return;
+        this.gamePaused = true;
+        this.pausedOverlay.classList.add('show');
+        document.getElementById('pauseMsg').textContent = auto
+            ? 'Game auto-paused — Click to resume'
+            : 'Click anywhere to resume';
+    }
+
+    resumeGame() {
+        if (!this.gamePaused) return;
+        this.gamePaused = false;
+        this.pausedOverlay.classList.remove('show');
+        this.ballVelX = 0; this.ballVelY = 0;
+    }
+
+    checkSkipLevelAvailability() {
+        if (this.levelAttempts >= 10) {
+            document.getElementById('skipLevelHint').classList.add('show');
+            document.getElementById('skipButton').style.display = 'inline-block';
+        }
+    }
+
+    skipLevel() {
+        if (this.levelAttempts < 10) return;
+        if (confirm("Skip this level? You won't get points for it.")) {
+            this.level++;
+            if (this.level > this.levelConfigs.length) { this.endGame(); return; }
+            this.saveGame(); this.updateUI(); this.setupLevel();
+            this.showNotification('Level Skipped','No points awarded',2000);
+        }
+    }
+
+    resetProgress() {
+        if (!confirm('Reset all progress? This cannot be undone.')) return;
+        try {
+            ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings']
+                .forEach(k => localStorage.removeItem(k));
+        } catch(e) {}
+        this.level=1; this.score=0; this.bestScore=0; this.achievements=[];
+        this.levelAttempts=0; this.gameRunning=false; this.levelCompleting=false;
+        this.settings={ sound:true,haptic:true,trail:true,sensitivity:50,autoPause:true };
+        this.startButton.style.display='block'; this.startButton.textContent='START GAME';
+        document.getElementById('menuButtons').style.display='none';
+        document.getElementById('skipLevelHint').classList.remove('show');
+        document.getElementById('skipButton').style.display='none';
+        this.setupLevel(); this.updateUI();
+        document.getElementById('saveStatus').textContent='Progress reset';
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  SAVE / LOAD / ACHIEVEMENTS
+    // ─────────────────────────────────────────────────────────
+    saveGame() {
+        try {
+            localStorage.setItem('tiltSphereSave', JSON.stringify({
+                level:this.level, score:this.score, achievements:this.achievements,
+                timestamp:Date.now(), version:'3.0'
+            }));
+            const ind = document.getElementById('saveIndicator');
+            ind.classList.add('show');
+            setTimeout(() => ind.classList.remove('show'), 2000);
+            document.getElementById('saveStatus').textContent = `Last saved: ${new Date().toLocaleTimeString()}`;
+        } catch(e) {
+            document.getElementById('saveStatus').textContent = 'Save failed — storage full?';
+        }
+    }
+
+    loadGame() {
+        try {
+            const raw = localStorage.getItem('tiltSphereSave');
+            if (raw) {
+                const d = JSON.parse(raw);
+                this.level=d.level||1; this.score=d.score||0; this.achievements=d.achievements||[];
+                document.getElementById('saveStatus').textContent = `Loaded: ${new Date(d.timestamp).toLocaleString()}`;
+            }
+        } catch(e) {
+            document.getElementById('saveStatus').textContent = 'Failed to load save';
+        }
+    }
+
+    checkAchievements() {
+        const n = [];
+        const push = name => { if (!this.achievements.includes(name)) { n.push(name); this.achievements.push(name); } };
+
+        if (this.level === 2) push('first_win');
+        [10,25,50,75,100,125,150,175,200,225,250].forEach(m => { if (this.level===m+1) push(`level_${m}`); });
+        [{l:21,n:'tier_easy'},{l:41,n:'tier_medium'},{l:61,n:'tier_hard'},{l:81,n:'tier_expert'},{l:101,n:'tier_legendary'},{l:151,n:'tier_master'},{l:201,n:'tier_grandmaster'},{l:251,n:'tier_ultimate'}]
+            .forEach(t => { if (this.level===t.l) push(t.n); });
+        [{s:5000,n:'score_5k'},{s:10000,n:'score_10k'},{s:25000,n:'score_25k'},{s:50000,n:'score_50k'},{s:100000,n:'score_100k'}]
+            .forEach(a => { if (this.score>=a.s) push(a.n); });
+
+        if (n.length) {
+            try { localStorage.setItem('tiltSphereAchievements', JSON.stringify(this.achievements)); } catch(e) {}
+            this.showAchievementNotification(n[0]);
+            n.slice(1).forEach((a,i) => setTimeout(()=>this.showAchievementNotification(a),(i+1)*5000));
+        }
+    }
+
+    getAchievementData(name) {
+        return ({
+            first_win:        {title:'🎉 First Victory!',        description:'Completed your first level!'},
+            level_10:         {title:'🔟 Ten Levels Down!',       description:'Reached level 10'},
+            level_25:         {title:'🌟 Quarter Century!',       description:'Reached level 25'},
+            level_50:         {title:'⭐ Halfway There!',         description:'Reached level 50'},
+            level_75:         {title:'💫 Three Quarters!',        description:'Reached level 75'},
+            level_100:        {title:'💯 Century Mark!',          description:'Reached level 100'},
+            level_125:        {title:'🚀 Beyond Limits!',         description:'Reached level 125'},
+            level_150:        {title:'⚡ Lightning Fast!',        description:'Reached level 150'},
+            level_175:        {title:'🌈 Almost There!',          description:'Reached level 175'},
+            level_200:        {title:'🏆 Legendary Status!',      description:'Reached level 200'},
+            level_225:        {title:'👑 Royal Achievement!',     description:'Reached level 225'},
+            level_250:        {title:'🎯 Perfect Score!',         description:'Completed all 250 levels!'},
+            tier_easy:        {title:'🟢 Easy Tier Complete!',    description:'Mastered the basics'},
+            tier_medium:      {title:'🟡 Medium Tier Complete!',  description:'Building skills'},
+            tier_hard:        {title:'🟠 Hard Tier Complete!',    description:'Getting challenging'},
+            tier_expert:      {title:'🔴 Expert Tier Complete!',  description:'Expert level achieved'},
+            tier_legendary:   {title:'🟣 Legendary Tier Complete!', description:'Legendary skills'},
+            tier_master:      {title:'⚫ Master Tier Complete!',  description:'Master level reached'},
+            tier_grandmaster: {title:'🔵 Grandmaster!',           description:'Grandmaster achieved'},
+            tier_ultimate:    {title:'⚪ Ultimate Tier Complete!', description:'Ultimate mastery!'},
+            score_5k:         {title:'💰 5K Points!',             description:'Scored 5,000 points'},
+            score_10k:        {title:'💎 10K Points!',            description:'Scored 10,000 points'},
+            score_25k:        {title:'🏅 25K Points!',            description:'Scored 25,000 points'},
+            score_50k:        {title:'🥈 50K Points!',            description:'Scored 50,000 points'},
+            score_100k:       {title:'🥇 100K Points!',           description:'Scored 100,000 points'},
+        })[name];
+    }
+
+    showAchievementNotification(name) {
+        const d = this.getAchievementData(name); if (!d) return;
+        document.getElementById('achievementTitle').textContent       = d.title;
+        document.getElementById('achievementDescription').textContent = d.description;
+        const el = document.getElementById('achievementNotification');
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 4000);
+        if (this.settings.haptic && navigator.vibrate) navigator.vibrate([200,100,200]);
+    }
+
+    showNotification(title, desc, duration=3000) {
+        const el = document.createElement('div');
+        el.className = 'achievement-notification';
+        el.innerHTML = `<div class="achievement-title">${title}</div><div class="achievement-description">${desc}</div>`;
+        document.body.appendChild(el);
+        setTimeout(() => el.classList.add('show'), 100);
+        setTimeout(() => { el.classList.remove('show'); setTimeout(()=>el.remove(),500); }, duration);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  UI HELPERS
+    // ─────────────────────────────────────────────────────────
+    updateUI() {
+        document.getElementById('level').textContent         = this.level;
+        document.getElementById('score').textContent         = this.score;
+        document.getElementById('bestScore').textContent     = this.bestScore;
+        document.getElementById('achievementCount').textContent = this.achievements.length;
+        const pct = Math.min((this.level/this.levelConfigs.length)*100,100);
+        document.getElementById('progressLevel').textContent = Math.round(pct)+'%';
+        document.getElementById('progressFill').style.width  = pct+'%';
+    }
+
+    updateDifficultyBadge(d) {
+        const b = document.getElementById('difficultyBadge');
+        b.className = `difficulty-badge difficulty-${d}`;
+        b.textContent = d.toUpperCase();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  SETTINGS
+    // ─────────────────────────────────────────────────────────
+    showSettings() {
+        document.getElementById('sensitivitySlider').value      = this.settings.sensitivity;
+        document.getElementById('sensitivityValue').textContent = this.settings.sensitivity;
+        document.getElementById('soundToggle').checked          = this.settings.sound;
+        document.getElementById('hapticToggle').checked         = this.settings.haptic;
+        document.getElementById('trailToggle').checked          = this.settings.trail;
+        document.getElementById('autoPauseToggle').checked      = this.settings.autoPause;
+        const sl = document.getElementById('sensitivitySlider');
+        sl.oninput = () => document.getElementById('sensitivityValue').textContent = sl.value;
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    closeSettings() { document.getElementById('settingsModal').style.display='none'; }
+
+    saveSettings() {
+        this.settings.sensitivity = parseInt(document.getElementById('sensitivitySlider').value);
+        this.settings.sound       = document.getElementById('soundToggle').checked;
+        this.settings.haptic      = document.getElementById('hapticToggle').checked;
+        this.settings.trail       = document.getElementById('trailToggle').checked;
+        this.settings.autoPause   = document.getElementById('autoPauseToggle').checked;
+        try {
+            localStorage.setItem('tiltSphereSettings', JSON.stringify(this.settings));
+            this.closeSettings();
+            document.getElementById('saveStatus').textContent='Settings saved!';
+            setTimeout(()=>{ if(document.getElementById('saveStatus').textContent.includes('Settings saved!')) document.getElementById('saveStatus').textContent=''; },3000);
+        } catch(e) { alert('Failed to save settings.'); }
+    }
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+let game;
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        game = new TiltBallGame();
+    } catch(e) {
+        console.error(e);
+        document.body.innerHTML = `<div style="color:#fff;text-align:center;padding:50px"><h2>Game Failed to Load</h2><p>Please refresh.</p><p style="font-size:12px;margin-top:20px">Error: ${e.message}</p></div>`;
+    }
+});
+</script>
 </body>
 </html>
