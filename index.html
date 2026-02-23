@@ -318,7 +318,11 @@ class TiltBallGame {
         this._ecTapCount = 0;
         this._ecTapTimer = null;
 
-        // ── Achievements ──────────────────────────────────────
+        // ── Web Audio sound engine ────────────────────────────────
+        this.audioCtx = null;  // created lazily on first user gesture
+        this._nearMissSoundActive = false;
+
+        // ── Achievements ──────────────────────────────────────────────
         this.achievements = JSON.parse(localStorage.getItem('tiltSphereAchievements') || '[]');
 
         // ── Settings ─────────────────────────────────────────
@@ -335,6 +339,12 @@ class TiltBallGame {
         // ── Funnel position (set in setupLevel) ───────────────
         this.funnelX = 280; this.funnelY = 280;
         this.funnelPulsePhase = 0;
+
+        // ── Level intro animation ─────────────────────────────
+        // levelIntroProgress: 0=not running, >0=animating (0..1 then done)
+        this.levelIntroProgress  = 0;
+        this.levelIntroActive    = false;
+        this.levelIntroLevel     = 1;
 
         // ── Animation time (for moving obstacle phase) ────────
         this.time = 0;
@@ -419,6 +429,13 @@ class TiltBallGame {
         document.getElementById('skipButton').style.display = 'none';
 
         this.updateDifficultyBadge(cfg.difficulty);
+
+        // Trigger level intro animation (only when game is already running)
+        if (this.gameRunning) {
+            this.levelIntroLevel    = this.level;
+            this.levelIntroProgress = 0.001; // start
+            this.levelIntroActive   = true;
+        }
     }
 
     spawnObstacle(isMoving, cfg) {
@@ -510,8 +527,59 @@ class TiltBallGame {
         this.ballVelX = 0; this.ballVelY = 0;
         this.stuckTimer = 0;
         this.emergencyCenter.classList.remove('show');
-        // Small burst to acknowledge the reset
         this.spawnParticles(175, 175, '#4fd1c7', 12);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  SOUND ENGINE  (Web Audio API — no library needed)
+    // ─────────────────────────────────────────────────────────
+    initAudio() {
+        if (this.audioCtx) return;
+        try {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) { console.warn('Web Audio not available'); }
+    }
+
+    _playTone(frequency, type, gainVal, duration, attack=0.01, pitchEnd=null) {
+        if (!this.audioCtx || !this.settings.sound) return;
+        try {
+            const now  = this.audioCtx.currentTime;
+            const osc  = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, now);
+            if (pitchEnd) osc.frequency.exponentialRampToValueAtTime(pitchEnd, now + duration);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(gainVal, now + attack);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.start(now);
+            osc.stop(now + duration + 0.05);
+        } catch(e) {}
+    }
+
+    soundWallBounce() {
+        this._playTone(110, 'sine', 0.15, 0.12, 0.005, 55);
+    }
+
+    soundObstacleHit() {
+        this._playTone(220, 'sawtooth', 0.2, 0.15, 0.005, 80);
+        setTimeout(() => this._playTone(160, 'square', 0.1, 0.10, 0.005), 30);
+    }
+
+    soundNearMiss() {
+        if (this._nearMissSoundActive) return;
+        this._nearMissSoundActive = true;
+        this._playTone(440, 'sine', 0.07, 0.4, 0.05, 660);
+        setTimeout(() => { this._nearMissSoundActive = false; }, 600);
+    }
+
+    soundLevelComplete() {
+        [523, 659, 784].forEach((freq, i) => {
+            setTimeout(() => this._playTone(freq, 'sine', 0.26, 0.35, 0.01), i * 130);
+        });
+        setTimeout(() => this._playTone(1047, 'sine', 0.18, 0.5, 0.01), 420);
     }
 
     setupAutoPause() {
@@ -536,11 +604,16 @@ class TiltBallGame {
     }
 
     startGame() {
+        this.initAudio(); // safe — triggered by user gesture
         this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
         this.startButton.style.display = 'none';
         document.getElementById('menuButtons').style.display = 'flex';
         window.addEventListener('deviceorientation', e => this.handleOrientation(e));
         window.addEventListener('keydown',           e => this.handleKeyboard(e));
+        // Trigger intro for level 1
+        this.levelIntroLevel    = this.level;
+        this.levelIntroProgress = 0.001;
+        this.levelIntroActive   = true;
     }
 
     handleOrientation(e) {
@@ -569,6 +642,16 @@ class TiltBallGame {
     update() {
         if (!this.gameRunning || this.gamePaused || this.levelCompleting) return;
 
+        // Advance level intro (60 frames = 1 second)
+        if (this.levelIntroActive) {
+            this.levelIntroProgress += 1/60;
+            if (this.levelIntroProgress >= 1) {
+                this.levelIntroActive   = false;
+                this.levelIntroProgress = 0;
+            }
+            return; // physics frozen during intro
+        }
+
         this.time += 0.016; // ~60fps frame time in seconds
 
         // Stuck detection
@@ -583,10 +666,12 @@ class TiltBallGame {
         this.ballY    += this.ballVelY;
 
         // Wall collisions
-        if (this.ballX <= 0)              { this.ballX = 0;                this.ballVelX =  Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
-        if (this.ballX >= this.W-this.ballSize) { this.ballX = this.W-this.ballSize; this.ballVelX = -Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
-        if (this.ballY <= 0)              { this.ballY = 0;                this.ballVelY =  Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
-        if (this.ballY >= this.H-this.ballSize) { this.ballY = this.H-this.ballSize; this.ballVelY = -Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); this.shakeCanvas(); }
+        let wallHit = false;
+        if (this.ballX <= 0)                    { this.ballX = 0;                    this.ballVelX =  Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
+        if (this.ballX >= this.W-this.ballSize) { this.ballX = this.W-this.ballSize; this.ballVelX = -Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
+        if (this.ballY <= 0)                    { this.ballY = 0;                    this.ballVelY =  Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
+        if (this.ballY >= this.H-this.ballSize) { this.ballY = this.H-this.ballSize; this.ballVelY = -Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
+        if (wallHit) { this.shakeCanvas(); this.soundWallBounce(); }
 
         // Update moving obstacles
         this.obstacles.forEach(o => {
@@ -601,25 +686,51 @@ class TiltBallGame {
             o.y = Math.max(5, Math.min(o.y, this.H - o.h - 5));
         });
 
-        // Obstacle collisions
+        // Obstacle collisions — with proper AABB push-out to prevent corner trapping
         this.obstacles.forEach(o => {
             if (this.ballX < o.x+o.w && this.ballX+this.ballSize > o.x &&
                 this.ballY < o.y+o.h && this.ballY+this.ballSize > o.y) {
 
-                this.ballVelX *= -.5; this.ballVelY *= -.5;
-
-                const cx = o.x+o.w/2, cy = o.y+o.h/2;
                 const bcx = this.ballX+this.ballSize/2, bcy = this.ballY+this.ballSize/2;
-                const d = Math.hypot(bcx-cx, bcy-cy);
-                if (d > 0) {
-                    this.ballVelX += ((bcx-cx)/d)*2;
-                    this.ballVelY += ((bcy-cy)/d)*2;
-                    this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
-                    this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
+
+                // ── Push-out: find the shallowest axis of overlap and eject the
+                //    ball along it so it never gets embedded in a corner. ──────
+                const overlapLeft   = (o.x + o.w) - this.ballX;          // dist to push right
+                const overlapRight  = (this.ballX + this.ballSize) - o.x; // dist to push left
+                const overlapTop    = (o.y + o.h) - this.ballY;           // dist to push down
+                const overlapBottom = (this.ballY + this.ballSize) - o.y; // dist to push up
+
+                const minOverlapX = Math.min(overlapLeft, overlapRight);
+                const minOverlapY = Math.min(overlapTop, overlapBottom);
+
+                if (minOverlapX < minOverlapY) {
+                    // Resolve horizontally — shallower penetration on X axis
+                    if (overlapLeft < overlapRight) {
+                        this.ballX = o.x + o.w;             // push ball to right of obstacle
+                        this.ballVelX = Math.abs(this.ballVelX) * 0.6;
+                    } else {
+                        this.ballX = o.x - this.ballSize;   // push ball to left of obstacle
+                        this.ballVelX = -Math.abs(this.ballVelX) * 0.6;
+                    }
+                    this.ballVelY *= 0.85; // bleed a little Y energy too
+                } else {
+                    // Resolve vertically — shallower penetration on Y axis
+                    if (overlapTop < overlapBottom) {
+                        this.ballY = o.y + o.h;             // push ball below obstacle
+                        this.ballVelY = Math.abs(this.ballVelY) * 0.6;
+                    } else {
+                        this.ballY = o.y - this.ballSize;   // push ball above obstacle
+                        this.ballVelY = -Math.abs(this.ballVelY) * 0.6;
+                    }
+                    this.ballVelX *= 0.85;
                 }
 
-                this.spawnParticles(bcx, bcy, o.isMoving ? '#9f7aea' : '#d69e2e', 8);
+                this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
+                this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
+
+                this.spawnParticles(bcx, bcy, o.isMoving ? '#9f7aea' : '#d69e2e', 6);
                 this.shakeCanvas();
+                this.soundObstacleHit();
                 if (this.settings.haptic && navigator.vibrate) navigator.vibrate([30,10,30]);
 
                 this.levelAttempts++;
@@ -640,9 +751,12 @@ class TiltBallGame {
             }
 
             // Near-miss: ramp from 0 (far) to 1 (just outside edge)
-            // Active zone: 3x funnel radius down to the edge
             const nearZone = fs * 1.8;
             this.nearMissProximity = Math.max(0, 1 - (distToFunnel - fs/2) / nearZone);
+
+            // Play a soft chime when ball enters the near-miss zone
+            if (this.nearMissProximity > 0.65) this.soundNearMiss();
+            else this._nearMissSoundActive = false; // reset when ball leaves zone
         }
 
         // Emergency centre button: show after 5 seconds stuck (300 frames @ 60fps)
@@ -785,6 +899,76 @@ class TiltBallGame {
 
         // Draw score popups
         this.drawScorePopups(ctx);
+
+        // Draw level intro overlay (on top of everything)
+        if (this.levelIntroActive) {
+            this.drawLevelIntro(ctx);
+        }
+
+        ctx.restore();
+    }
+
+    drawLevelIntro(ctx) {
+        const p   = this.levelIntroProgress; // 0..1
+        // Phase: 0-0.3 zoom in, 0.3-0.7 hold, 0.7-1.0 fade out
+        let alpha, scale;
+        if (p < 0.3) {
+            alpha = p / 0.3;
+            scale = 0.4 + (p / 0.3) * 0.6;
+        } else if (p < 0.7) {
+            alpha = 1;
+            scale = 1;
+        } else {
+            alpha = 1 - (p - 0.7) / 0.3;
+            scale = 1 + (p - 0.7) * 0.5;
+        }
+
+        const cfg  = this.getCurrentConfig();
+        const diff = cfg.difficulty.toUpperCase();
+        const diffColors = {
+            EASY:'#68d391', MEDIUM:'#f6ad55', HARD:'#f56565',
+            EXPERT:'#9f7aea', LEGENDARY:'#ffd700', MASTER:'#e53e3e',
+            GRANDMASTER:'#63b3ed', ULTIMATE:'#ffd700'
+        };
+        const col = diffColors[diff] || '#63b3ed';
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(this.W/2, this.H/2);
+        ctx.scale(scale, scale);
+
+        // Dark scrim
+        ctx.fillStyle = `rgba(0,0,0,0.55)`;
+        ctx.fillRect(-this.W/2/scale, -this.H/2/scale, this.W/scale, this.H/scale);
+
+        // Level number
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor  = col;
+        ctx.shadowBlur   = 30;
+        ctx.fillStyle    = '#ffffff';
+        ctx.font         = 'bold 64px Arial';
+        ctx.fillText(`${this.levelIntroLevel}`, 0, -18);
+
+        // "LEVEL" label above
+        ctx.font      = 'bold 14px Arial';
+        ctx.fillStyle = col;
+        ctx.shadowBlur = 12;
+        ctx.fillText('LEVEL', 0, -52);
+
+        // Difficulty badge below
+        ctx.font      = 'bold 13px Arial';
+        ctx.fillStyle = col;
+        ctx.shadowBlur = 8;
+        ctx.fillText(diff, 0, 20);
+
+        // Decorative lines either side of number
+        ctx.shadowBlur  = 0;
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath(); ctx.moveTo(-80, 0); ctx.lineTo(-28, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo( 28, 0); ctx.lineTo( 80, 0); ctx.stroke();
 
         ctx.restore();
     }
@@ -1108,6 +1292,7 @@ class TiltBallGame {
         }
 
         if (this.settings.haptic && navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
+        this.soundLevelComplete();
 
         this.checkAchievements();
         this.level++;
