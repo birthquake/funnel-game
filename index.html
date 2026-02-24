@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TiltSphere - Ultimate Ball Challenge</title>
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0f0f23">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TiltSphere">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <!-- SEO / OG -->
+    <meta name="description" content="Tilt your phone to guide the ball into the target. 250 levels of increasingly devious challenges.">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -162,6 +172,59 @@
         }
         .skip-level-hint.show { opacity: 1; }
 
+        /* ── Orientation lock overlay ── */
+        .orientation-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 9999;
+            background: #0f0f23;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: #fff; text-align: center; padding: 30px;
+        }
+        .orientation-overlay.show { display: flex; }
+        .rotate-icon {
+            font-size: 64px; margin-bottom: 20px;
+            animation: rotateHint 2s ease-in-out infinite;
+        }
+        @keyframes rotateHint {
+            0%,100% { transform: rotate(0deg); }
+            50%      { transform: rotate(90deg); }
+        }
+
+        /* ── Splash screen ── */
+        .splash-screen {
+            position: fixed; inset: 0; z-index: 10000;
+            background: #0f0f23;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+        .splash-screen.fade-out { opacity: 0; pointer-events: none; }
+        .splash-title {
+            font-size: 42px; font-weight: bold; letter-spacing: 4px;
+            background: linear-gradient(45deg, #63b3ed, #4fd1c7, #68d391);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: splashPulse 1.5s ease-in-out infinite;
+        }
+        .splash-sub {
+            font-size: 13px; color: rgba(255,255,255,0.5);
+            margin-top: 12px; letter-spacing: 2px;
+        }
+        .splash-ball {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fff, #fc8181, #c53030);
+            margin-bottom: 30px;
+            box-shadow: 0 0 30px rgba(245,101,101,0.6);
+            animation: splashBounce 1s ease-in-out infinite;
+        }
+        @keyframes splashPulse {
+            0%,100% { opacity: 1; } 50% { opacity: 0.7; }
+        }
+        @keyframes splashBounce {
+            0%,100% { transform: translateY(0); }
+            50%      { transform: translateY(-18px); }
+        }
+
         /* ── Emergency center button (overlaid bottom-left of canvas) ── */
         .emergency-center {
             position: absolute; bottom: 10px; left: 10px;
@@ -180,6 +243,20 @@
 </head>
 <body>
 
+<!-- ── Splash screen ── -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-ball"></div>
+    <div class="splash-title">TILTSPHERE</div>
+    <div class="splash-sub">ULTIMATE BALL CHALLENGE</div>
+</div>
+
+<!-- ── Orientation lock ── -->
+<div class="orientation-overlay" id="orientationOverlay">
+    <div class="rotate-icon">📱</div>
+    <div style="font-size:18px;font-weight:bold;margin-bottom:10px">Please rotate your device</div>
+    <div style="font-size:13px;opacity:.7">TiltSphere is designed for portrait mode</div>
+</div>
+
 <!-- ── Header ── -->
 <div class="header">
     <div class="title">TILTSPHERE</div>
@@ -187,6 +264,8 @@
         <div class="stat-item">Level: <span id="level">1</span><span id="difficultyBadge" class="difficulty-badge difficulty-easy">EASY</span></div>
         <div class="stat-item">Score: <span id="score">0</span></div>
         <div class="stat-item">Best: <span id="bestScore">0</span></div>
+        <div class="stat-item" id="livesDisplay">❤️ <span id="livesCount">3</span></div>
+        <div class="stat-item" id="timerDisplay">⏱ <span id="timerCount">--</span></div>
     </div>
     <div class="progress-meter"><div class="progress-fill" id="progressFill"></div></div>
     <div style="font-size:10px">Progress: <span id="progressLevel">0%</span> • <span id="achievementCount">0</span> achievements</div>
@@ -221,11 +300,65 @@
         <button class="menu-button" onclick="game.showSettings()">Settings</button>
         <button class="menu-button" onclick="game.resetProgress()">Reset</button>
         <button class="menu-button" id="skipButton" onclick="game.skipLevel()" style="display:none">Skip Level</button>
+        <button class="menu-button" onclick="game.showLeaderboard()">Scores</button>
+        <button class="menu-button" onclick="game.showSkinPicker()">Skins</button>
+        <button class="menu-button" onclick="game.startDailyChallenge()">Daily</button>
+        <button class="menu-button" onclick="game.startEndlessMode()">Endless</button>
     </div>
     <div>Tilt your device to guide the ball into the target</div>
     <div class="skip-level-hint" id="skipLevelHint">Having trouble? Skip available after 10 attempts</div>
     <div style="margin-top:5px;font-size:10px" id="saveStatus"></div>
 </div>
+
+<!-- ── Leaderboard modal ── -->
+<div id="leaderboardModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #ffd700;border-radius:15px;padding:20px;width:90%;max-width:300px;color:#fff;text-align:center">
+        <h3 style="color:#ffd700;margin-bottom:15px">🏆 High Scores</h3>
+        <div id="leaderboardList" style="margin-bottom:20px;font-size:13px;line-height:2"></div>
+        <button onclick="game.closeLeaderboard()" style="background:#ffd700;color:#000;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-weight:bold">Close</button>
+    </div>
+</div>
+
+<!-- ── Game Over modal ── -->
+<div id="gameOverModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #f56565;border-radius:15px;padding:25px;width:90%;max-width:300px;color:#fff;text-align:center">
+        <h2 style="color:#f56565;margin-bottom:8px">GAME OVER</h2>
+        <p id="gameOverMsg" style="font-size:13px;margin-bottom:15px;opacity:.8"></p>
+        <div style="font-size:22px;font-weight:bold;color:#ffd700;margin-bottom:5px">Score: <span id="gameOverScore">0</span></div>
+        <div style="font-size:13px;margin-bottom:5px">Level reached: <span id="gameOverLevel">1</span></div>
+        <div style="font-size:13px;margin-bottom:20px">Best: <span id="gameOverBest">0</span></div>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="game.restartGame()" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Play Again</button>
+            <button onclick="game.showLeaderboard()" style="background:#ffd700;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Scores</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Skin Picker modal ── -->
+<div id="skinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:20px;width:90%;max-width:300px;color:#fff;text-align:center">
+        <h3 style="color:#63b3ed;margin-bottom:5px">🎨 Ball Skins</h3>
+        <p style="font-size:11px;opacity:.6;margin-bottom:15px">Unlock skins by earning achievements</p>
+        <div id="skinGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px"></div>
+        <button onclick="game.closeSkinPicker()" style="background:#63b3ed;color:#000;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-weight:bold">Close</button>
+    </div>
+</div>
+
+<!-- ── Daily Challenge modal ── -->
+<div id="dailyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #68d391;border-radius:15px;padding:22px;width:90%;max-width:300px;color:#fff;text-align:center">
+        <h3 style="color:#68d391;margin-bottom:5px">📅 Daily Challenge</h3>
+        <p style="font-size:12px;opacity:.7;margin-bottom:4px">Same level layout for everyone today</p>
+        <p id="dailyDateLabel" style="font-size:11px;color:#68d391;margin-bottom:15px"></p>
+        <div id="dailyBestScore" style="font-size:13px;margin-bottom:15px;opacity:.8"></div>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="game.confirmDailyChallenge()" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Play!</button>
+            <button onclick="game.closeDailyModal()" style="background:#4a5568;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Endless mode ── no extra modal needed, just starts -->
 
 <!-- ── Settings modal ── -->
 <div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center">
@@ -290,6 +423,52 @@ class TiltBallGame {
         this.levelAttempts = 0;
         this.stuckTimer    = 0;
         this.lastBallPos   = { x: 165, y: 165 };
+
+        // ── Lives & failure ───────────────────────────────────
+        this.lives         = 3;
+        this.timeLeft      = 30;      // seconds, set per level
+        this.timerRunning  = false;
+        this._timerInterval = null;
+        this.gameOverActive = false;
+
+        // ── Combo multiplier ──────────────────────────────────
+        this.combo         = 0;       // consecutive clean levels (no obstacle hits)
+        this.levelHitCount = 0;       // obstacle hits this level
+        this._comboPopup   = null;    // { text, life, maxLife, x, y }
+
+        // ── Game mode ─────────────────────────────────────────
+        this.gameMode      = 'normal';  // 'normal' | 'daily' | 'endless'
+        this.endlessLevel  = 1;         // endless mode counter
+        this.dailyDate     = '';
+        this.dailySeed     = 0;
+
+        // ── Ball skin ─────────────────────────────────────────
+        // 0=classic(red), 1=ocean(blue), 2=forest(green), 3=gold, 4=plasma(purple)
+        this.activeSkin    = parseInt(localStorage.getItem('tiltSphereSkin') || '0');
+
+        // ── Splash ────────────────────────────────────────────
+        this.splashDone    = false;
+
+        // ── Virtual joystick ──────────────────────────────────
+        this.joystickActive   = false;  // shown when no gyro available
+        this.joystickBase     = { x: 60, y: 290 };
+        this.joystickThumb    = { x: 60, y: 290 };
+        this.joystickTouchId  = null;
+        this.gyroAvailable    = false;
+
+        // ── Tilt calibration ─────────────────────────────────
+        this.tiltOffsetBeta  = 0;
+        this.tiltOffsetGamma = 0;
+        this.calibrating     = false;
+        this.calibrationSamples = [];
+        this.calibrationDone = false;
+
+        // ── Tutorial (level 1 only) ───────────────────────────
+        this.tutorialActive  = false;
+        this.tutorialProgress = 0;    // 0..1
+
+        // ── Background theme ─────────────────────────────────
+        this.bgTheme = { r:45, g:55, b:72 }; // current arena bg colour (interpolated)
 
         // ── Obstacles (pure data, no DOM elements) ────────────
         // Each: { x, y, w, h, isMoving, dir, speed, range, startX, startY, phase }
@@ -359,6 +538,23 @@ class TiltBallGame {
         this.setupEventListeners();
         this.setupAutoPause();
 
+        // Detect gyro
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', (e) => {
+                if (e.gamma !== null || e.beta !== null) this.gyroAvailable = true;
+            }, { once: true });
+        }
+
+        // Show splash then fade
+        setTimeout(() => {
+            const splash = document.getElementById('splashScreen');
+            splash.classList.add('fade-out');
+            setTimeout(() => { splash.style.display = 'none'; this.splashDone = true; }, 600);
+        }, 2000);
+
+        // Orientation lock
+        this.setupOrientationLock();
+
         // Start render loop even before game starts (draws idle state)
         this.renderLoop();
     }
@@ -381,6 +577,7 @@ class TiltBallGame {
     }
 
     getCurrentConfig() {
+        if (this.gameMode === 'endless') return this.getEndlessConfig();
         return this.levelConfigs[Math.min(this.level-1, this.levelConfigs.length-1)];
     }
 
@@ -430,11 +627,21 @@ class TiltBallGame {
 
         this.updateDifficultyBadge(cfg.difficulty);
 
+        // Reset per-level state
+        this.levelHitCount = 0;
+
         // Trigger level intro animation (only when game is already running)
         if (this.gameRunning) {
             this.levelIntroLevel    = this.level;
-            this.levelIntroProgress = 0.001; // start
+            this.levelIntroProgress = 0.001;
             this.levelIntroActive   = true;
+            this.startTimer();
+        }
+
+        // Tutorial on level 1
+        if (this.level === 1 && this.gameRunning) {
+            this.tutorialActive   = true;
+            this.tutorialProgress = 0;
         }
     }
 
@@ -483,7 +690,31 @@ class TiltBallGame {
         const range     = 40  + Math.random() * 60;
         const phase     = Math.random() * Math.PI * 2;  // start offset
 
-        this.obstacles.push({ x, y, w:size, h:size, isMoving, dir, speed, range, startX:x, startY:y, phase });
+        // Pick obstacle type: rect (default), circle, spinner, laser
+        // Lasers only appear from level 40+; spinners from level 20+
+        const lvl = this.level;
+        let type = 'rect';
+        if (lvl >= 40 && Math.random() < 0.2)      type = 'laser';
+        else if (lvl >= 20 && Math.random() < 0.25) type = 'spinner';
+        else if (lvl >= 10 && Math.random() < 0.3)  type = 'circle';
+
+        // Laser: a sweeping line — stored differently (cx, cy, length, angle, sweepSpeed)
+        let laserAngle = Math.random() * Math.PI;
+        let laserLength = 50 + Math.random() * 60;
+        let laserSweepSpeed = (0.015 + Math.random() * 0.02) * (Math.random() < 0.5 ? 1 : -1);
+
+        this.obstacles.push({
+            x, y, w: size, h: size,
+            isMoving, dir, speed, range, startX: x, startY: y, phase,
+            type,
+            // circle: radius stored as w/2
+            // spinner: rotation angle
+            spinAngle: 0, spinSpeed: (0.02 + Math.random() * 0.03) * (Math.random() < 0.5 ? 1 : -1),
+            // laser
+            laserAngle, laserLength, laserSweepSpeed,
+            // clean hit tracking
+            hitThisLevel: false
+        });
     }
 
     // ─────────────────────────────────────────────────────────
@@ -493,6 +724,67 @@ class TiltBallGame {
         this.startButton.addEventListener('click', () => this.requestPermission());
         this.pausedOverlay.addEventListener('click', () => { if (this.gamePaused) this.resumeGame(); });
         this.setupEmergencyCenter();
+        this.setupJoystick();
+    }
+
+    setupOrientationLock() {
+        const overlay = document.getElementById('orientationOverlay');
+        const check = () => {
+            const landscape = window.matchMedia('(orientation: landscape)').matches;
+            overlay.classList.toggle('show', landscape);
+        };
+        check();
+        window.addEventListener('orientationchange', check);
+        window.addEventListener('resize', check);
+    }
+
+    setupJoystick() {
+        const canvas = this.canvas;
+        canvas.addEventListener('touchstart', (e) => {
+            if (!this.joystickActive) return;
+            for (const t of e.changedTouches) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = this.W / rect.width;
+                const tx = (t.clientX - rect.left) * scaleX;
+                const ty = (t.clientY - rect.top) * scaleX;
+                const dx = tx - this.joystickBase.x, dy = ty - this.joystickBase.y;
+                if (Math.hypot(dx, dy) < 50) {
+                    this.joystickTouchId = t.identifier;
+                    break;
+                }
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!this.joystickActive || this.joystickTouchId === null) return;
+            for (const t of e.changedTouches) {
+                if (t.identifier !== this.joystickTouchId) continue;
+                const rect  = canvas.getBoundingClientRect();
+                const scaleX = this.W / rect.width;
+                const tx = (t.clientX - rect.left) * scaleX;
+                const ty = (t.clientY - rect.top) * scaleX;
+                const dx = tx - this.joystickBase.x, dy = ty - this.joystickBase.y;
+                const dist = Math.hypot(dx, dy);
+                const maxR = 35;
+                if (dist <= maxR) {
+                    this.joystickThumb.x = tx;
+                    this.joystickThumb.y = ty;
+                } else {
+                    this.joystickThumb.x = this.joystickBase.x + (dx/dist)*maxR;
+                    this.joystickThumb.y = this.joystickBase.y + (dy/dist)*maxR;
+                }
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        const endJoy = () => {
+            this.joystickTouchId = null;
+            this.joystickThumb.x = this.joystickBase.x;
+            this.joystickThumb.y = this.joystickBase.y;
+        };
+        canvas.addEventListener('touchend',    endJoy);
+        canvas.addEventListener('touchcancel', endJoy);
     }
 
     setupEmergencyCenter() {
@@ -604,24 +896,25 @@ class TiltBallGame {
     }
 
     startGame() {
-        this.initAudio(); // safe — triggered by user gesture
-        this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
-        this.startButton.style.display = 'none';
-        document.getElementById('menuButtons').style.display = 'flex';
-        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
-        window.addEventListener('keydown',           e => this.handleKeyboard(e));
-        // Trigger intro for level 1
-        this.levelIntroLevel    = this.level;
-        this.levelIntroProgress = 0.001;
-        this.levelIntroActive   = true;
+        this.initAudio();
+        // Check if device orientation is available — if so, calibrate first
+        if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+            // Non-iOS: just start calibration directly
+            this.startCalibration();
+        } else {
+            // iOS already granted permission via requestPermission, skip extra calibration step
+            this.finishCalibrationAndStart();
+        }
     }
 
     handleOrientation(e) {
         if (!this.gameRunning || this.gamePaused) return;
-        const cfg = this.getCurrentConfig();
-        const s   = (this.settings.sensitivity/100) * this.sensitivity * cfg.ballSpeed;
-        this.ballVelX += (e.gamma||0) * s * 0.1;
-        this.ballVelY += (e.beta ||0) * s * 0.1;
+        const cfg   = this.getCurrentConfig();
+        const s     = (this.settings.sensitivity/100) * this.sensitivity * cfg.ballSpeed;
+        const gamma = (e.gamma||0) - this.tiltOffsetGamma;
+        const beta  = (e.beta ||0) - this.tiltOffsetBeta;
+        this.ballVelX += gamma * s * 0.1;
+        this.ballVelY += beta  * s * 0.1;
         this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
         this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
     }
@@ -652,7 +945,19 @@ class TiltBallGame {
             return; // physics frozen during intro
         }
 
-        this.time += 0.016; // ~60fps frame time in seconds
+        this.time += 0.016;
+
+        // Virtual joystick input (when gyro unavailable)
+        if (this.joystickActive && this.joystickTouchId !== null) {
+            const dx = this.joystickThumb.x - this.joystickBase.x;
+            const dy = this.joystickThumb.y - this.joystickBase.y;
+            const cfg = this.getCurrentConfig();
+            const s   = (this.settings.sensitivity/100) * this.sensitivity * cfg.ballSpeed * 0.08;
+            this.ballVelX += dx * s;
+            this.ballVelY += dy * s;
+            this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
+            this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
+        }
 
         // Stuck detection
         const dm = Math.hypot(this.ballX - this.lastBallPos.x, this.ballY - this.lastBallPos.y);
@@ -673,23 +978,76 @@ class TiltBallGame {
         if (this.ballY >= this.H-this.ballSize) { this.ballY = this.H-this.ballSize; this.ballVelY = -Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
         if (wallHit) { this.shakeCanvas(); this.soundWallBounce(); }
 
-        // Update moving obstacles
+        // Update obstacle positions and angles
         this.obstacles.forEach(o => {
+            // Spinner always rotates regardless of isMoving
+            if (o.type === 'spinner') o.spinAngle += o.spinSpeed;
+            // Laser sweeps
+            if (o.type === 'laser')   o.laserAngle += o.laserSweepSpeed;
+
             if (!o.isMoving) return;
-            const t = this.time * o.speed * Math.PI * 2 / 3 + o.phase; // oscillate
-            if      (o.dir === 'x')    { o.x = o.startX + Math.sin(t) * o.range; }
-            else if (o.dir === 'y')    { o.y = o.startY + Math.sin(t) * o.range; }
-            else                       { o.x = o.startX + Math.sin(t) * o.range * .7;
-                                         o.y = o.startY + Math.cos(t) * o.range * .7; }
-            // clamp to arena
+            const t = this.time * o.speed * Math.PI * 2 / 3 + o.phase;
+            if      (o.dir === 'x')  { o.x = o.startX + Math.sin(t) * o.range; }
+            else if (o.dir === 'y')  { o.y = o.startY + Math.sin(t) * o.range; }
+            else                     { o.x = o.startX + Math.sin(t) * o.range * .7;
+                                       o.y = o.startY + Math.cos(t) * o.range * .7; }
             o.x = Math.max(5, Math.min(o.x, this.W - o.w - 5));
             o.y = Math.max(5, Math.min(o.y, this.H - o.h - 5));
         });
 
-        // Obstacle collisions — with proper AABB push-out to prevent corner trapping
+        // Obstacle collisions — type-aware with AABB push-out
         this.obstacles.forEach(o => {
-            if (this.ballX < o.x+o.w && this.ballX+this.ballSize > o.x &&
-                this.ballY < o.y+o.h && this.ballY+this.ballSize > o.y) {
+            const bcx = this.ballX + this.ballSize/2, bcy = this.ballY + this.ballSize/2;
+            const br  = this.ballSize / 2;
+            let hit   = false;
+
+            if (o.type === 'circle') {
+                // Circle collision
+                const cx = o.x + o.w/2, cy = o.y + o.h/2, cr = o.w/2;
+                const dist = Math.hypot(bcx-cx, bcy-cy);
+                if (dist < br + cr) {
+                    hit = true;
+                    const nx = (bcx-cx)/dist, ny = (bcy-cy)/dist;
+                    // Push ball out
+                    const overlap = br + cr - dist;
+                    this.ballX += nx * overlap;
+                    this.ballY += ny * overlap;
+                    // Reflect velocity
+                    const dot = this.ballVelX*nx + this.ballVelY*ny;
+                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65;
+                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65;
+                }
+            } else if (o.type === 'laser') {
+                // Laser line segment collision
+                const cx = o.x + o.w/2, cy = o.y + o.h/2;
+                const hl = o.laserLength / 2;
+                const lx1 = cx + Math.cos(o.laserAngle) * hl;
+                const ly1 = cy + Math.sin(o.laserAngle) * hl;
+                const lx2 = cx - Math.cos(o.laserAngle) * hl;
+                const ly2 = cy - Math.sin(o.laserAngle) * hl;
+                // Point-to-segment distance
+                const dx = lx2-lx1, dy = ly2-ly1;
+                const lenSq = dx*dx + dy*dy;
+                let t = ((bcx-lx1)*dx + (bcy-ly1)*dy) / lenSq;
+                t = Math.max(0, Math.min(1, t));
+                const closestX = lx1 + t*dx, closestY = ly1 + t*dy;
+                const distToLine = Math.hypot(bcx-closestX, bcy-closestY);
+                if (distToLine < br + 4) {
+                    hit = true;
+                    // Reflect off laser normal
+                    const nx = (bcx-closestX)/distToLine, ny = (bcy-closestY)/distToLine;
+                    const overlap = br + 4 - distToLine;
+                    this.ballX += nx * overlap;
+                    this.ballY += ny * overlap;
+                    const dot = this.ballVelX*nx + this.ballVelY*ny;
+                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65;
+                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65;
+                }
+            } else {
+                // Rect or spinner — AABB collision
+                if (this.ballX < o.x+o.w && this.ballX+this.ballSize > o.x &&
+                    this.ballY < o.y+o.h && this.ballY+this.ballSize > o.y) {
+                    hit = true;
 
                 const bcx = this.ballX+this.ballSize/2, bcy = this.ballY+this.ballSize/2;
 
@@ -725,15 +1083,21 @@ class TiltBallGame {
                     this.ballVelX *= 0.85;
                 }
 
+                    this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
+                    this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
+                } // end rect
+            }
+
+            if (hit) {
                 this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
                 this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
-
-                this.spawnParticles(bcx, bcy, o.isMoving ? '#9f7aea' : '#d69e2e', 6);
+                this.spawnParticles(bcx, bcy, o.isMoving ? '#9f7aea' : (o.type==='laser'?'#fc8181':o.type==='circle'?'#4fd1c7':'#d69e2e'), 6);
                 this.shakeCanvas();
                 this.soundObstacleHit();
                 if (this.settings.haptic && navigator.vibrate) navigator.vibrate([30,10,30]);
-
                 this.levelAttempts++;
+                this.levelHitCount++;
+                this.combo = 0; // break combo on any obstacle hit
                 this.checkSkipLevelAvailability();
             }
         });
@@ -792,6 +1156,19 @@ class TiltBallGame {
             p.y -= 1; p.life--;
             return p.life > 0;
         });
+
+        // Tutorial progress (level 1 only, fades out after 3 seconds or first movement)
+        if (this.tutorialActive) {
+            const moving = Math.abs(this.ballVelX) > 0.3 || Math.abs(this.ballVelY) > 0.3;
+            this.tutorialProgress += moving ? 0.025 : 0.004;
+            if (this.tutorialProgress >= 1) this.tutorialActive = false;
+        }
+
+        // Background theme — smoothly interpolate toward target colour
+        const target = this.getBgTargetColour();
+        this.bgTheme.r += (target.r - this.bgTheme.r) * 0.005;
+        this.bgTheme.g += (target.g - this.bgTheme.g) * 0.005;
+        this.bgTheme.b += (target.b - this.bgTheme.b) * 0.005;
 
         // Funnel pulse speed is now managed inside drawFunnel() based on nearMissProximity
     }
@@ -864,10 +1241,11 @@ class TiltBallGame {
         // Clear
         ctx.clearRect(0, 0, this.W, this.H);
 
-        // Arena background
+        // Arena background — tinted by difficulty theme
+        const tr = Math.round(this.bgTheme.r), tg = Math.round(this.bgTheme.g), tb = Math.round(this.bgTheme.b);
         const bg = ctx.createRadialGradient(175,175,10, 175,175,250);
-        bg.addColorStop(0, '#2d3748');
-        bg.addColorStop(1, '#1a202c');
+        bg.addColorStop(0, `rgb(${tr+17},${tg+19},${tb+24})`);
+        bg.addColorStop(1, `rgb(${tr},${tg},${tb})`);
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, this.W, this.H);
 
@@ -899,6 +1277,21 @@ class TiltBallGame {
 
         // Draw score popups
         this.drawScorePopups(ctx);
+
+        // Draw tutorial arrows (level 1)
+        if (this.tutorialActive && this.gameRunning && !this.levelIntroActive) {
+            this.drawTutorial(ctx);
+        }
+
+        // Draw virtual joystick
+        if (this.joystickActive && this.gameRunning && !this.gamePaused && !this.levelIntroActive) {
+            this.drawJoystick(ctx);
+        }
+
+        // Draw calibration screen
+        if (this.calibrating) {
+            this.drawCalibrationScreen(ctx);
+        }
 
         // Draw level intro overlay (on top of everything)
         if (this.levelIntroActive) {
@@ -1092,8 +1485,69 @@ class TiltBallGame {
 
     drawObstacles(ctx) {
         this.obstacles.forEach(o => {
+            const cx = o.x + o.w/2, cy = o.y + o.h/2;
             ctx.save();
-            ctx.translate(o.x + o.w/2, o.y + o.h/2);
+
+            if (o.type === 'circle') {
+                const r = o.w/2;
+                // Glow
+                if (o.isMoving) {
+                    const g = ctx.createRadialGradient(cx,cy,0,cx,cy,r*1.8);
+                    g.addColorStop(0,'rgba(79,209,197,.3)'); g.addColorStop(1,'rgba(79,209,197,0)');
+                    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r*1.8,0,Math.PI*2); ctx.fill();
+                }
+                const grad = ctx.createRadialGradient(cx-r*.3,cy-r*.3,r*.1,cx,cy,r);
+                grad.addColorStop(0, o.isMoving ? '#4fd1c7' : '#d69e2e');
+                grad.addColorStop(1, o.isMoving ? '#2c7a7b' : '#744210');
+                ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle = o.isMoving ? '#4fd1c7' : '#d69e2e';
+                ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+                // Highlight
+                ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.arc(cx-r*.2,cy-r*.2,r*.4,Math.PI*1.1,Math.PI*1.9); ctx.stroke();
+                ctx.restore(); return;
+            }
+
+            if (o.type === 'laser') {
+                const hl = o.laserLength/2;
+                const x1 = cx + Math.cos(o.laserAngle)*hl, y1 = cy + Math.sin(o.laserAngle)*hl;
+                const x2 = cx - Math.cos(o.laserAngle)*hl, y2 = cy - Math.sin(o.laserAngle)*hl;
+                // Glow
+                ctx.shadowColor = '#f56565'; ctx.shadowBlur = 14;
+                const grad = ctx.createLinearGradient(x1,y1,x2,y2);
+                grad.addColorStop(0,'rgba(245,101,101,0)');
+                grad.addColorStop(0.5,'rgba(245,101,101,1)');
+                grad.addColorStop(1,'rgba(245,101,101,0)');
+                ctx.strokeStyle=grad; ctx.lineWidth=3;
+                ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+                // Core
+                ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,200,200,0.8)'; ctx.lineWidth=1;
+                ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+                // Pivot dot
+                ctx.fillStyle='#f56565'; ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2); ctx.fill();
+                ctx.restore(); return;
+            }
+
+            ctx.translate(cx, cy);
+
+            if (o.type === 'spinner') {
+                ctx.rotate(o.spinAngle);
+                // Cross/plus shape
+                const arm = o.w * 0.45, thick = o.w * 0.22;
+                ctx.fillStyle = o.isMoving ? '#805ad5' : '#c05621';
+                ctx.shadowColor = o.isMoving ? '#9f7aea' : '#d69e2e'; ctx.shadowBlur = 8;
+                // Horizontal bar
+                ctx.fillRect(-arm, -thick/2, arm*2, thick);
+                // Vertical bar
+                ctx.fillRect(-thick/2, -arm, thick, arm*2);
+                ctx.strokeStyle = o.isMoving ? '#9f7aea' : '#d69e2e';
+                ctx.lineWidth = 1; ctx.shadowBlur = 0;
+                ctx.strokeRect(-arm, -thick/2, arm*2, thick);
+                ctx.strokeRect(-thick/2, -arm, thick, arm*2);
+                ctx.restore(); return;
+            }
+
+            ctx.translate(0, 0); // already at cx,cy from translate above
 
             if (o.isMoving) {
                 // Purple moving obstacle with glow
@@ -1248,7 +1702,7 @@ class TiltBallGame {
             const t = p.life / p.maxLife;
             ctx.save();
             ctx.globalAlpha = t;
-            ctx.fillStyle   = '#ffd700';
+            ctx.fillStyle   = p.color || '#ffd700';
             ctx.font        = `bold ${14 + (1-t)*6}px Arial`;
             ctx.textAlign   = 'center';
             ctx.shadowColor = '#ffd700';
@@ -1264,6 +1718,7 @@ class TiltBallGame {
     levelComplete() {
         if (this.levelCompleting) return;
         this.levelCompleting = true;
+        this.stopTimer();
 
         const cfg = this.getCurrentConfig();
         const fs  = Math.max(cfg.funnelSize, 30);
@@ -1279,25 +1734,36 @@ class TiltBallGame {
         // Explosion burst
         this.spawnExplosion(fcx, fcy);
 
-        // Score
-        const bonus = this.level * 100;
+        // Score with combo multiplier
+        const mult  = this.levelHitCount === 0 ? (this.combo++, this.getComboMultiplier()) : (this.combo = 0, 1);
+        const bonus = Math.round(this.level * 100 * mult);
         this.score += bonus;
+        this.levelHitCount = 0;
 
         // Score popup
-        this.scorePopups.push({ x: fcx, y: fcy - 20, text: `+${bonus}`, life: 60, maxLife: 60 });
+        const popColor = mult > 1 ? '#ffd700' : '#68d391';
+        this.scorePopups.push({ x: fcx, y: fcy - 20, text: `+${bonus}`, life: 60, maxLife: 60, color: popColor });
+        this.showComboPopup(mult, fcx, fcy);
 
         if (this.score > this.bestScore) {
             this.bestScore = this.score;
             try { localStorage.setItem('tiltSphereBest', this.bestScore.toString()); } catch(e) {}
         }
 
-        if (this.settings.haptic && navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
+        if (this.settings.haptic && navigator.vibrate) {
+            // Sync with soundLevelComplete 4-note fanfare (C-E-G + octave)
+            navigator.vibrate([80,50,80,50,80,50,200]);
+        }
         this.soundLevelComplete();
 
         this.checkAchievements();
+
+        if (this.gameMode === 'daily')   this.saveDailyScore();
+        if (this.gameMode === 'endless') { this.endlessLevel++; this.saveEndlessScore(); }
+
         this.level++;
 
-        if (this.level > this.levelConfigs.length) { this.endGame(); return; }
+        if (this.gameMode === 'normal' && this.level > this.levelConfigs.length) { this.endGame(); return; }
 
         this.saveGame();
         this.updateUI();
@@ -1347,18 +1813,29 @@ class TiltBallGame {
         ctx.save();
         ctx.globalAlpha = this._ballAnimOpacity ?? 1;
 
-        // Outer glow
+        // Outer glow — skin coloured
+        const skinGlows = ['rgba(245,101,101,ALPHA)','rgba(99,179,237,ALPHA)','rgba(104,211,145,ALPHA)','rgba(255,215,0,ALPHA)','rgba(183,148,244,ALPHA)'];
+        const glowBase = (skinGlows[this.activeSkin]||skinGlows[0]).replace('ALPHA','0.4');
+        const glowFade = (skinGlows[this.activeSkin]||skinGlows[0]).replace('ALPHA','0');
         const glow = ctx.createRadialGradient(cx,cy,r*.5, cx,cy,r*2.5);
-        glow.addColorStop(0, 'rgba(245,101,101,0.4)');
-        glow.addColorStop(1, 'rgba(245,101,101,0)');
+        glow.addColorStop(0, glowBase);
+        glow.addColorStop(1, glowFade);
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(cx,cy,r*2.5,0,Math.PI*2); ctx.fill();
 
-        // Ball body
+        // Ball body — skin-coloured
+        const skinPalettes = [
+            ['#ffffff','#fc8181','#c53030'], // 0 classic red
+            ['#ffffff','#63b3ed','#1a56a0'], // 1 ocean blue
+            ['#ffffff','#68d391','#276749'], // 2 forest green
+            ['#ffffff','#ffd700','#b7791f'], // 3 gold
+            ['#ffffff','#b794f4','#553c9a'], // 4 plasma purple
+        ];
+        const pal = skinPalettes[this.activeSkin] || skinPalettes[0];
         const gR = ctx.createRadialGradient(cx-r*.3,cy-r*.4,r*.1, cx,cy,r);
-        gR.addColorStop(0, '#ffffff');
-        gR.addColorStop(0.3, '#fc8181');
-        gR.addColorStop(1, '#c53030');
+        gR.addColorStop(0, pal[0]);
+        gR.addColorStop(0.3, pal[1]);
+        gR.addColorStop(1, pal[2]);
         ctx.fillStyle = gR;
         ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
 
@@ -1374,8 +1851,10 @@ class TiltBallGame {
         if (speed > 2 && !this.levelCompleting) {
             const mx = -this.ballVelX*2, my = -this.ballVelY*2;
             const streak = ctx.createLinearGradient(cx,cy, cx+mx,cy+my);
-            streak.addColorStop(0, `rgba(245,101,101,${Math.min(speed/this.maxVelocity*.6,0.5)})`);
-            streak.addColorStop(1, 'rgba(245,101,101,0)');
+            const streakCol = (skinGlows[this.activeSkin]||skinGlows[0]).replace('ALPHA', Math.min(speed/this.maxVelocity*.6,0.5).toString());
+            const streakFade = (skinGlows[this.activeSkin]||skinGlows[0]).replace('ALPHA','0');
+            streak.addColorStop(0, streakCol);
+            streak.addColorStop(1, streakFade);
             ctx.fillStyle = streak;
             ctx.beginPath(); ctx.arc(cx,cy,r*.8,0,Math.PI*2); ctx.fill();
         }
@@ -1438,11 +1917,12 @@ class TiltBallGame {
     resetProgress() {
         if (!confirm('Reset all progress? This cannot be undone.')) return;
         try {
-            ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings']
+            ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings','tiltSphereScores']
                 .forEach(k => localStorage.removeItem(k));
         } catch(e) {}
-        this.level=1; this.score=0; this.bestScore=0; this.achievements=[];
+        this.level=1; this.score=0; this.bestScore=0; this.achievements=[]; this.lives=3; this.combo=0;
         this.levelAttempts=0; this.gameRunning=false; this.levelCompleting=false;
+        this.stopTimer();
         this.settings={ sound:true,haptic:true,trail:true,sensitivity:50,autoPause:true };
         this.startButton.style.display='block'; this.startButton.textContent='START GAME';
         document.getElementById('menuButtons').style.display='none';
@@ -1554,10 +2034,11 @@ class TiltBallGame {
     //  UI HELPERS
     // ─────────────────────────────────────────────────────────
     updateUI() {
-        document.getElementById('level').textContent         = this.level;
-        document.getElementById('score').textContent         = this.score;
-        document.getElementById('bestScore').textContent     = this.bestScore;
+        document.getElementById('level').textContent            = this.level;
+        document.getElementById('score').textContent            = this.score;
+        document.getElementById('bestScore').textContent        = this.bestScore;
         document.getElementById('achievementCount').textContent = this.achievements.length;
+        document.getElementById('livesCount').textContent       = this.lives;
         const pct = Math.min((this.level/this.levelConfigs.length)*100,100);
         document.getElementById('progressLevel').textContent = Math.round(pct)+'%';
         document.getElementById('progressFill').style.width  = pct+'%';
@@ -1586,6 +2067,458 @@ class TiltBallGame {
 
     closeSettings() { document.getElementById('settingsModal').style.display='none'; }
 
+    // ─────────────────────────────────────────────────────────
+    //  TIMER
+    // ─────────────────────────────────────────────────────────
+    startTimer() {
+        this.stopTimer();
+        const cfg = this.getCurrentConfig();
+        // Time scales: easy=40s, medium=35s, hard=28s, expert=22s, legendary+=18s
+        const timeLimits = { easy:40, medium:35, hard:28, expert:22, legendary:18, master:16, grandmaster:15, ultimate:14 };
+        this.timeLeft = timeLimits[cfg.difficulty] || 30;
+        this.updateTimerUI();
+        this.timerRunning = true;
+        this._timerInterval = setInterval(() => {
+            if (!this.gameRunning || this.gamePaused || !this.timerRunning) return;
+            this.timeLeft--;
+            this.updateTimerUI();
+            if (this.timeLeft <= 0) {
+                this.stopTimer();
+                this.loseLife('Time's up!');
+            }
+        }, 1000);
+    }
+
+    stopTimer() {
+        if (this._timerInterval) { clearInterval(this._timerInterval); this._timerInterval = null; }
+        this.timerRunning = false;
+    }
+
+    updateTimerUI() {
+        const el = document.getElementById('timerCount');
+        if (el) {
+            el.textContent = this.timeLeft;
+            el.style.color = this.timeLeft <= 5 ? '#f56565' : this.timeLeft <= 10 ? '#f6ad55' : '#fff';
+        }
+    }
+
+    loseLife(reason) {
+        this.lives = Math.max(0, this.lives - 1);
+        this.combo = 0;
+        document.getElementById('livesCount').textContent = this.lives;
+        if (this.settings.haptic && navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
+        this.spawnParticles(this.ballX+10, this.ballY+10, '#f56565', 20);
+
+        if (this.lives <= 0) {
+            this.triggerGameOver(reason);
+        } else {
+            this.showNotification(`💔 Life lost! — ${reason}`, `${this.lives} ${this.lives===1?'life':'lives'} remaining`, 2500);
+            // Reset ball and restart timer
+            this.ballX = 165; this.ballY = 165;
+            this.ballVelX = 0; this.ballVelY = 0;
+            this.startTimer();
+        }
+    }
+
+    triggerGameOver(reason) {
+        this.gameRunning   = false;
+        this.levelCompleting = false;
+        this.stopTimer();
+        this.gameOverActive = true;
+        this.saveHighScore();
+        // Populate modal
+        document.getElementById('gameOverMsg').textContent  = reason;
+        document.getElementById('gameOverScore').textContent = this.score;
+        document.getElementById('gameOverLevel').textContent = this.level;
+        document.getElementById('gameOverBest').textContent  = this.bestScore;
+        document.getElementById('gameOverModal').style.display = 'flex';
+        if (this.settings.haptic && navigator.vibrate) navigator.vibrate([400,100,400]);
+    }
+
+    restartGame() {
+        document.getElementById('gameOverModal').style.display = 'none';
+        this.gameOverActive = false;
+        this.level = 1; this.score = 0; this.lives = 3; this.combo = 0;
+        this.setupLevel();
+        this.updateUI();
+        this.startTimer();
+        this.gameRunning = true;
+        this.levelIntroLevel    = this.level;
+        this.levelIntroProgress = 0.001;
+        this.levelIntroActive   = true;
+        this.tutorialActive = (this.level === 1);
+        this.tutorialProgress = 0;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  LEADERBOARD
+    // ─────────────────────────────────────────────────────────
+    saveHighScore() {
+        try {
+            const scores = JSON.parse(localStorage.getItem('tiltSphereScores') || '[]');
+            scores.push({ score: this.score, level: this.level, date: new Date().toLocaleDateString() });
+            scores.sort((a,b) => b.score - a.score);
+            scores.splice(5); // keep top 5
+            localStorage.setItem('tiltSphereScores', JSON.stringify(scores));
+            if (this.score > this.bestScore) {
+                this.bestScore = this.score;
+                localStorage.setItem('tiltSphereBest', this.bestScore.toString());
+            }
+        } catch(e) {}
+    }
+
+    showLeaderboard() {
+        const scores = JSON.parse(localStorage.getItem('tiltSphereScores') || '[]');
+        const list   = document.getElementById('leaderboardList');
+        if (!scores.length) {
+            list.innerHTML = '<div style="opacity:.6">No scores yet — play a game!</div>';
+        } else {
+            const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+            list.innerHTML = scores.map((s,i) =>
+                `<div>${medals[i]} <b>${s.score.toLocaleString()}</b> pts &nbsp;·&nbsp; Lvl ${s.level} &nbsp;·&nbsp; <span style="opacity:.6">${s.date}</span></div>`
+            ).join('');
+        }
+        document.getElementById('leaderboardModal').style.display = 'flex';
+    }
+
+    closeLeaderboard() {
+        document.getElementById('leaderboardModal').style.display = 'none';
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  COMBO MULTIPLIER
+    // ─────────────────────────────────────────────────────────
+    getComboMultiplier() {
+        if (this.combo <= 0)  return 1;
+        if (this.combo <= 2)  return 1.5;
+        if (this.combo <= 5)  return 2;
+        if (this.combo <= 9)  return 3;
+        return 5;
+    }
+
+    showComboPopup(multiplier, x, y) {
+        if (multiplier <= 1) return;
+        const labels = { 1.5:'x1.5 COMBO!', 2:'x2 COMBO!', 3:'x3 HOT STREAK!', 5:'x5 ON FIRE! 🔥' };
+        this.scorePopups.push({
+            x, y: y - 35,
+            text: labels[multiplier] || `x${multiplier}`,
+            life: 80, maxLife: 80,
+            color: multiplier >= 3 ? '#ffd700' : '#4fd1c7'
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  TILT CALIBRATION
+    // ─────────────────────────────────────────────────────────
+    startCalibration() {
+        this.calibrating       = true;
+        this.calibrationSamples = [];
+        this.calibrationDone   = false;
+        // Collect 60 samples (1 second) then average
+        const handler = (e) => {
+            if (!this.calibrating) return;
+            this.calibrationSamples.push({ beta: e.beta||0, gamma: e.gamma||0 });
+            if (this.calibrationSamples.length >= 60) {
+                window.removeEventListener('deviceorientation', handler);
+                const avgBeta  = this.calibrationSamples.reduce((s,v)=>s+v.beta, 0)  / 60;
+                const avgGamma = this.calibrationSamples.reduce((s,v)=>s+v.gamma, 0) / 60;
+                this.tiltOffsetBeta  = avgBeta;
+                this.tiltOffsetGamma = avgGamma;
+                this.calibrating     = false;
+                this.calibrationDone = true;
+                this.finishCalibrationAndStart();
+            }
+        };
+        window.addEventListener('deviceorientation', handler);
+    }
+
+    finishCalibrationAndStart() {
+        this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
+        this.startButton.style.display = 'none';
+        document.getElementById('menuButtons').style.display = 'flex';
+        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
+        window.addEventListener('keydown', e => this.handleKeyboard(e));
+        this.lives = 3; this.combo = 0;
+        document.getElementById('livesCount').textContent = this.lives;
+        // Show joystick if gyro not detected
+        this.joystickActive = !this.gyroAvailable;
+        this.startTimer();
+        this.levelIntroLevel    = this.level;
+        this.levelIntroProgress = 0.001;
+        this.levelIntroActive   = true;
+        this.tutorialActive     = (this.level === 1);
+        this.tutorialProgress   = 0;
+    }
+
+    drawJoystick(ctx) {
+        const bx = this.joystickBase.x,  by = this.joystickBase.y;
+        const tx = this.joystickThumb.x, ty = this.joystickThumb.y;
+        const active = this.joystickTouchId !== null;
+        ctx.save();
+        ctx.globalAlpha = active ? 0.75 : 0.35;
+        // Base ring
+        ctx.strokeStyle = '#63b3ed'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(bx, by, 38, 0, Math.PI*2); ctx.stroke();
+        // Inner guide ring
+        ctx.strokeStyle = 'rgba(99,179,237,0.3)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(bx, by, 20, 0, Math.PI*2); ctx.stroke();
+        // Thumb
+        const tg = ctx.createRadialGradient(tx-3,ty-3,1,tx,ty,14);
+        tg.addColorStop(0, '#fff');
+        tg.addColorStop(1, '#63b3ed');
+        ctx.fillStyle = tg;
+        ctx.beginPath(); ctx.arc(tx, ty, 14, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
+    drawCalibrationScreen(ctx) {
+        const p = Math.min(this.calibrationSamples.length / 60, 1);
+        ctx.save();
+        // Dim background
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(0, 0, this.W, this.H);
+        // Title
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle    = '#63b3ed';
+        ctx.font         = 'bold 16px Arial';
+        ctx.shadowColor  = '#63b3ed'; ctx.shadowBlur = 10;
+        ctx.fillText('CALIBRATING TILT…', this.W/2, this.H/2 - 50);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.font      = '12px Arial'; ctx.shadowBlur = 0;
+        ctx.fillText('Hold your device still', this.W/2, this.H/2 - 28);
+        // Progress bar
+        ctx.strokeStyle = '#63b3ed'; ctx.lineWidth = 2;
+        ctx.strokeRect(this.W/2-70, this.H/2-8, 140, 16);
+        ctx.fillStyle = '#63b3ed';
+        ctx.fillRect(this.W/2-68, this.H/2-6, 136*p, 12);
+        // Percentage
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Arial';
+        ctx.fillText(`${Math.round(p*100)}%`, this.W/2, this.H/2+22);
+        ctx.restore();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  BACKGROUND THEME
+    // ─────────────────────────────────────────────────────────
+    getBgTargetColour() {
+        const cfg = this.getCurrentConfig();
+        const themes = {
+            easy:        { r:28, g:45, b:55  },  // cool teal-dark
+            medium:      { r:45, g:38, b:20  },  // amber dark
+            hard:        { r:50, g:25, b:25  },  // red dark
+            expert:      { r:35, g:20, b:55  },  // purple dark
+            legendary:   { r:55, g:45, b:10  },  // gold dark
+            master:      { r:55, g:18, b:18  },  // deep red
+            grandmaster: { r:10, g:20, b:55  },  // deep blue
+            ultimate:    { r:8,  g:8,  b:8   },  // near black
+        };
+        return themes[cfg.difficulty] || { r:28, g:36, b:48 };
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  TUTORIAL DRAW
+    // ─────────────────────────────────────────────────────────
+    drawTutorial(ctx) {
+        const alpha = 1 - this.tutorialProgress;
+        if (alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.85;
+
+        // Pulsing arrows pointing in 4 tilt directions
+        const arrowSize = 22;
+        const cx = this.W/2, cy = this.H/2;
+        const offsets = [
+            { dx: 0,   dy:-55, angle: -Math.PI/2, label:'Tilt back' },
+            { dx: 0,   dy: 55, angle:  Math.PI/2, label:'Tilt forward' },
+            { dx:-55,  dy:  0, angle:  Math.PI,   label:'Tilt left' },
+            { dx: 55,  dy:  0, angle:  0,          label:'Tilt right' },
+        ];
+        const pulse = 0.7 + Math.sin(this.time * 4) * 0.3;
+        offsets.forEach(o => {
+            ctx.save();
+            ctx.translate(cx + o.dx, cy + o.dy);
+            ctx.rotate(o.angle);
+            ctx.scale(pulse, pulse);
+            ctx.fillStyle = '#63b3ed';
+            ctx.shadowColor = '#63b3ed'; ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.moveTo(arrowSize, 0);
+            ctx.lineTo(-arrowSize*0.6,  arrowSize*0.6);
+            ctx.lineTo(-arrowSize*0.6, -arrowSize*0.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // Centred hint text
+        ctx.fillStyle    = 'rgba(255,255,255,0.9)';
+        ctx.font         = 'bold 12px Arial';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor  = '#000'; ctx.shadowBlur = 6;
+        ctx.fillText('Tilt to move the ball', cx, cy + 80);
+        ctx.restore();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  DAILY CHALLENGE
+    // ─────────────────────────────────────────────────────────
+    getDailyDateString() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    getDailySeed(dateStr) {
+        // Simple string hash → deterministic seed
+        let h = 0;
+        for (let i = 0; i < dateStr.length; i++) h = Math.imul(31, h) + dateStr.charCodeAt(i) | 0;
+        return Math.abs(h);
+    }
+
+    startDailyChallenge() {
+        if (!this.gameRunning) return;
+        this.dailyDate  = this.getDailyDateString();
+        this.dailySeed  = this.getDailySeed(this.dailyDate);
+        const saved     = JSON.parse(localStorage.getItem('tiltSphereDailyScores') || '{}');
+        const todayBest = saved[this.dailyDate];
+        document.getElementById('dailyDateLabel').textContent = this.dailyDate;
+        document.getElementById('dailyBestScore').textContent = todayBest
+            ? `Your best today: ${todayBest.score} pts (level ${todayBest.level})`
+            : 'No score yet today — go for it!';
+        document.getElementById('dailyModal').style.display = 'flex';
+    }
+
+    closeDailyModal() { document.getElementById('dailyModal').style.display = 'none'; }
+
+    confirmDailyChallenge() {
+        this.closeDailyModal();
+        this.gameMode   = 'daily';
+        this.level      = 1;
+        this.score      = 0;
+        this.lives      = 3;
+        this.combo      = 0;
+        this._rng       = this._seededRng(this.dailySeed);
+        this.setupLevel();
+        this.updateUI();
+        this.startTimer();
+        this.levelIntroLevel    = 1;
+        this.levelIntroProgress = 0.001;
+        this.levelIntroActive   = true;
+        this.showNotification('📅 Daily Challenge!', `Seed: ${this.dailyDate}`, 2500);
+    }
+
+    saveDailyScore() {
+        try {
+            const saved = JSON.parse(localStorage.getItem('tiltSphereDailyScores') || '{}');
+            const prev  = saved[this.dailyDate];
+            if (!prev || this.score > prev.score) {
+                saved[this.dailyDate] = { score: this.score, level: this.level };
+                localStorage.setItem('tiltSphereDailyScores', JSON.stringify(saved));
+            }
+        } catch(e) {}
+    }
+
+    // Seeded PRNG (mulberry32)
+    _seededRng(seed) {
+        let s = seed >>> 0;
+        return () => {
+            s += 0x6D2B79F5;
+            let t = Math.imul(s ^ (s >>> 15), 1 | s);
+            t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  ENDLESS MODE
+    // ─────────────────────────────────────────────────────────
+    startEndlessMode() {
+        if (!this.gameRunning) return;
+        this.gameMode     = 'endless';
+        this.endlessLevel = 1;
+        this.level        = 1;
+        this.score        = 0;
+        this.lives        = 3;
+        this.combo        = 0;
+        this.setupLevel();
+        this.updateUI();
+        this.startTimer();
+        this.levelIntroLevel    = 1;
+        this.levelIntroProgress = 0.001;
+        this.levelIntroActive   = true;
+        this.showNotification('♾️ Endless Mode!', 'How far can you go?', 2500);
+    }
+
+    getEndlessConfig() {
+        // Procedurally scale difficulty beyond level 250
+        const n = this.endlessLevel;
+        return {
+            funnelSize:      Math.max(30 - Math.floor(n/20), 18),
+            obstacles:       Math.min(8 + Math.floor(n/3), 50),
+            movingObstacles: Math.min(3 + Math.floor(n/5), 20),
+            ballSpeed:       Math.min(1.5 + n * 0.015, 4),
+            difficulty:      n < 10 ? 'hard' : n < 25 ? 'expert' : n < 50 ? 'legendary' : n < 100 ? 'master' : 'ultimate',
+            specialMechanic: 'endless'
+        };
+    }
+
+    saveEndlessScore() {
+        try {
+            const scores = JSON.parse(localStorage.getItem('tiltSphereEndlessScores') || '[]');
+            scores.push({ score: this.score, level: this.endlessLevel, date: new Date().toLocaleDateString() });
+            scores.sort((a,b) => b.score - a.score);
+            scores.splice(5);
+            localStorage.setItem('tiltSphereEndlessScores', JSON.stringify(scores));
+        } catch(e) {}
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  BALL SKINS
+    // ─────────────────────────────────────────────────────────
+    getSkinDefs() {
+        return [
+            { id:0, name:'Classic',  color:'#fc8181', unlockAchievement:null,        emoji:'🔴' },
+            { id:1, name:'Ocean',    color:'#63b3ed', unlockAchievement:'tier_easy',  emoji:'🔵' },
+            { id:2, name:'Forest',   color:'#68d391', unlockAchievement:'tier_hard',  emoji:'🟢' },
+            { id:3, name:'Gold',     color:'#ffd700', unlockAchievement:'tier_legendary', emoji:'🟡' },
+            { id:4, name:'Plasma',   color:'#b794f4', unlockAchievement:'tier_master', emoji:'🟣' },
+        ];
+    }
+
+    showSkinPicker() {
+        const grid  = document.getElementById('skinGrid');
+        const skins = this.getSkinDefs();
+        grid.innerHTML = skins.map(s => {
+            const unlocked = s.unlockAchievement === null || this.achievements.includes(s.unlockAchievement);
+            const active   = this.activeSkin === s.id;
+            return `<div onclick="game.selectSkin(${s.id})" style="
+                cursor:${unlocked?'pointer':'default'};
+                padding:10px 6px; border-radius:10px; text-align:center;
+                border:2px solid ${active?'#ffd700':'rgba(255,255,255,0.15)'};
+                background:${active?'rgba(255,215,0,0.1)':'rgba(255,255,255,0.04)'};
+                opacity:${unlocked?1:0.4};">
+                <div style="font-size:24px">${s.emoji}</div>
+                <div style="font-size:10px;margin-top:4px">${s.name}</div>
+                <div style="font-size:9px;opacity:.6">${unlocked?'✓ Unlocked':'Locked'}</div>
+            </div>`;
+        }).join('');
+        document.getElementById('skinModal').style.display = 'flex';
+    }
+
+    selectSkin(id) {
+        const skins   = this.getSkinDefs();
+        const skin    = skins.find(s => s.id === id);
+        if (!skin) return;
+        const unlocked = skin.unlockAchievement === null || this.achievements.includes(skin.unlockAchievement);
+        if (!unlocked) { this.showNotification('🔒 Locked', `Earn the ${skin.unlockAchievement} achievement`, 2500); return; }
+        this.activeSkin = id;
+        try { localStorage.setItem('tiltSphereSkin', id.toString()); } catch(e) {}
+        this.showSkinPicker(); // refresh grid
+    }
+
+    closeSkinPicker() { document.getElementById('skinModal').style.display = 'none'; }
+
     saveSettings() {
         this.settings.sensitivity = parseInt(document.getElementById('sensitivitySlider').value);
         this.settings.sound       = document.getElementById('soundToggle').checked;
@@ -1599,6 +2532,13 @@ class TiltBallGame {
             setTimeout(()=>{ if(document.getElementById('saveStatus').textContent.includes('Settings saved!')) document.getElementById('saveStatus').textContent=''; },3000);
         } catch(e) { alert('Failed to save settings.'); }
     }
+}
+
+// ── Service Worker registration (PWA) ────────────────────────
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
 }
 
 // ── Boot ──────────────────────────────────────────────────────
