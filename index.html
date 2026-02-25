@@ -2220,25 +2220,34 @@ class TiltBallGame {
     //  TILT CALIBRATION
     // ─────────────────────────────────────────────────────────
     startCalibration() {
-        this.calibrating       = true;
+        this.calibrating        = true;
         this.calibrationSamples = [];
-        this.calibrationDone   = false;
-        // Collect 60 samples (1 second) then average
+        this.calibrationDone    = false;
+
+        const finish = () => {
+            if (!this.calibrating) return;
+            window.removeEventListener('deviceorientation', handler);
+            clearTimeout(timeout);
+            const n = this.calibrationSamples.length;
+            if (n > 0) {
+                this.tiltOffsetBeta  = this.calibrationSamples.reduce((s,v)=>s+v.beta,  0) / n;
+                this.tiltOffsetGamma = this.calibrationSamples.reduce((s,v)=>s+v.gamma, 0) / n;
+            }
+            this.calibrating     = false;
+            this.calibrationDone = true;
+            this.finishCalibrationAndStart();
+        };
+
         const handler = (e) => {
             if (!this.calibrating) return;
             this.calibrationSamples.push({ beta: e.beta||0, gamma: e.gamma||0 });
-            if (this.calibrationSamples.length >= 60) {
-                window.removeEventListener('deviceorientation', handler);
-                const avgBeta  = this.calibrationSamples.reduce((s,v)=>s+v.beta, 0)  / 60;
-                const avgGamma = this.calibrationSamples.reduce((s,v)=>s+v.gamma, 0) / 60;
-                this.tiltOffsetBeta  = avgBeta;
-                this.tiltOffsetGamma = avgGamma;
-                this.calibrating     = false;
-                this.calibrationDone = true;
-                this.finishCalibrationAndStart();
-            }
+            if (this.calibrationSamples.length >= 60) finish();
         };
+
         window.addEventListener('deviceorientation', handler);
+
+        // Safety net: if gyro never fires (desktop / no sensor), start after 3s
+        const timeout = setTimeout(finish, 3000);
     }
 
     finishCalibrationAndStart() {
