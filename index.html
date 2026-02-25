@@ -240,10 +240,11 @@
 <body>
 
 <!-- ── Splash screen ── -->
-<div id="splashScreen">
+<div id="splashScreen" onclick="startFromSplash()">
     <div class="splash-ball"></div>
     <div class="splash-title">TILTSPHERE</div>
     <div class="splash-sub">ULTIMATE BALL CHALLENGE</div>
+    <div style="margin-top:40px;font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:2px;animation:splashPulse 1.5s ease-in-out infinite">TAP TO PLAY</div>
 </div>
 
 <!-- ── Orientation lock ── -->
@@ -384,24 +385,27 @@
 </div>
 
 <script>
-// ── Splash dismiss — runs unconditionally, before anything else ──
-(function() {
-    function dismissSplash() {
-        var s = document.getElementById('splashScreen');
-        if (!s) return;
-        s.classList.add('fade-out');
-        setTimeout(function() { s.style.display = 'none'; }, 700);
-    }
-    // Primary: dismiss after 2.2s
-    setTimeout(dismissSplash, 2200);
-    // Safety net: dismiss on any user interaction if still visible
-    ['touchstart','click','keydown'].forEach(function(evt) {
-        document.addEventListener(evt, function handler() {
-            dismissSplash();
-            document.removeEventListener(evt, handler);
-        }, { once: true });
-    });
-})();
+// ── Splash ───────────────────────────────────────────────────
+var splashDismissed = false;
+function dismissSplash() {
+    if (splashDismissed) return;
+    splashDismissed = true;
+    var s = document.getElementById('splashScreen');
+    if (!s) return;
+    s.classList.add('fade-out');
+    setTimeout(function() { s.style.display = 'none'; }, 700);
+}
+function startFromSplash() {
+    dismissSplash();
+    // Start the game as soon as splash is tapped
+    setTimeout(function() {
+        if (typeof game !== 'undefined' && game && !game.gameRunning) {
+            game.requestPermission();
+        }
+    }, 300);
+}
+// Auto-dismiss after 5s as fallback (but don't auto-start)
+setTimeout(dismissSplash, 5000);
 
 // ═══════════════════════════════════════════════════════════════
 //  TiltSphere — Canvas Edition
