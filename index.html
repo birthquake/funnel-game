@@ -190,34 +190,6 @@
             50%      { transform: rotate(90deg); }
         }
 
-        /* ── Splash screen ── */
-        #splashScreen {
-            position: fixed; inset: 0; z-index: 10000;
-            background: #0f0f23;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: opacity 0.6s ease;
-        }
-        #splashScreen.fade-out { opacity: 0; pointer-events: none; }
-        .splash-ball {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #fff, #fc8181, #c53030);
-            box-shadow: 0 0 30px rgba(245,101,101,0.6);
-            margin-bottom: 28px;
-            animation: splashBounce 0.9s ease-in-out infinite;
-        }
-        .splash-title {
-            font-size: 40px; font-weight: bold; letter-spacing: 4px;
-            background: linear-gradient(45deg, #63b3ed, #4fd1c7, #68d391);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .splash-sub {
-            font-size: 12px; color: rgba(255,255,255,0.45);
-            margin-top: 10px; letter-spacing: 2px;
-        }
-        @keyframes splashBounce {
-            0%,100% { transform: translateY(0);     box-shadow: 0 0 30px rgba(245,101,101,.6); }
             50%      { transform: translateY(-20px); box-shadow: 0 20px 40px rgba(245,101,101,.2); }
         }
 
@@ -238,14 +210,6 @@
     </style>
 </head>
 <body>
-
-<!-- ── Splash screen ── -->
-<div id="splashScreen" onclick="startFromSplash()">
-    <div class="splash-ball"></div>
-    <div class="splash-title">TILTSPHERE</div>
-    <div class="splash-sub">ULTIMATE BALL CHALLENGE</div>
-    <div style="margin-top:40px;font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:2px;animation:splashPulse 1.5s ease-in-out infinite">TAP TO PLAY</div>
-</div>
 
 <!-- ── Orientation lock ── -->
 <div class="orientation-overlay" id="orientationOverlay">
@@ -385,27 +349,6 @@
 </div>
 
 <script>
-// ── Splash ───────────────────────────────────────────────────
-var splashDismissed = false;
-function dismissSplash() {
-    if (splashDismissed) return;
-    splashDismissed = true;
-    var s = document.getElementById('splashScreen');
-    if (!s) return;
-    s.classList.add('fade-out');
-    setTimeout(function() { s.style.display = 'none'; }, 700);
-}
-function startFromSplash() {
-    dismissSplash();
-    // Start the game as soon as splash is tapped
-    setTimeout(function() {
-        if (typeof game !== 'undefined' && game && !game.gameRunning) {
-            game.requestPermission();
-        }
-    }, 300);
-}
-// Auto-dismiss after 5s as fallback (but don't auto-start)
-setTimeout(dismissSplash, 5000);
 
 // ═══════════════════════════════════════════════════════════════
 //  TiltSphere — Canvas Edition
@@ -464,9 +407,6 @@ class TiltBallGame {
         // ── Ball skin ─────────────────────────────────────────
         // 0=classic(red), 1=ocean(blue), 2=forest(green), 3=gold, 4=plasma(purple)
         this.activeSkin    = parseInt(localStorage.getItem('tiltSphereSkin') || '0');
-
-        // ── Splash ────────────────────────────────────────────
-        this.splashDone    = false;
 
         // ── Virtual joystick ──────────────────────────────────
         this.joystickActive   = false;  // shown when no gyro available
