@@ -415,12 +415,9 @@ class TiltBallGame {
         this.joystickTouchId  = null;
         this.gyroAvailable    = false;
 
-        // ── Tilt calibration ─────────────────────────────────
+        // ── Tilt calibration (offsets only) ─────────────────
         this.tiltOffsetBeta  = 0;
         this.tiltOffsetGamma = 0;
-        this.calibrating     = false;
-        this.calibrationSamples = [];
-        this.calibrationDone = false;
 
         // ── Tutorial (level 1 only) ───────────────────────────
         this.tutorialActive  = false;
@@ -850,14 +847,20 @@ class TiltBallGame {
 
     startGame() {
         this.initAudio();
-        // Check if device orientation is available — if so, calibrate first
-        if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-            // Non-iOS: just start calibration directly
-            this.startCalibration();
-        } else {
-            // iOS already granted permission via requestPermission, skip extra calibration step
-            this.finishCalibrationAndStart();
-        }
+        this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
+        this.startButton.style.display = 'none';
+        document.getElementById('menuButtons').style.display = 'flex';
+        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
+        window.addEventListener('keydown', e => this.handleKeyboard(e));
+        this.lives = 3; this.combo = 0;
+        document.getElementById('livesCount').textContent = this.lives;
+        this.joystickActive = !this.gyroAvailable;
+        this.startTimer();
+        this.levelIntroLevel    = this.level;
+        this.levelIntroProgress = 0.001;
+        this.levelIntroActive   = true;
+        this.tutorialActive     = (this.level === 1);
+        this.tutorialProgress   = 0;
     }
 
     handleOrientation(e) {
@@ -1239,11 +1242,6 @@ class TiltBallGame {
         // Draw virtual joystick
         if (this.joystickActive && this.gameRunning && !this.gamePaused && !this.levelIntroActive) {
             this.drawJoystick(ctx);
-        }
-
-        // Draw calibration screen
-        if (this.calibrating) {
-            this.drawCalibrationScreen(ctx);
         }
 
         // Draw level intro overlay (on top of everything)
@@ -2163,54 +2161,7 @@ class TiltBallGame {
     // ─────────────────────────────────────────────────────────
     //  TILT CALIBRATION
     // ─────────────────────────────────────────────────────────
-    startCalibration() {
-        this.calibrating        = true;
-        this.calibrationSamples = [];
-        this.calibrationDone    = false;
 
-        const finish = () => {
-            if (!this.calibrating) return;
-            window.removeEventListener('deviceorientation', handler);
-            clearTimeout(timeout);
-            const n = this.calibrationSamples.length;
-            if (n > 0) {
-                this.tiltOffsetBeta  = this.calibrationSamples.reduce((s,v)=>s+v.beta,  0) / n;
-                this.tiltOffsetGamma = this.calibrationSamples.reduce((s,v)=>s+v.gamma, 0) / n;
-            }
-            this.calibrating     = false;
-            this.calibrationDone = true;
-            this.finishCalibrationAndStart();
-        };
-
-        const handler = (e) => {
-            if (!this.calibrating) return;
-            this.calibrationSamples.push({ beta: e.beta||0, gamma: e.gamma||0 });
-            if (this.calibrationSamples.length >= 60) finish();
-        };
-
-        window.addEventListener('deviceorientation', handler);
-
-        // Safety net: if gyro never fires (desktop / no sensor), start after 3s
-        const timeout = setTimeout(finish, 3000);
-    }
-
-    finishCalibrationAndStart() {
-        this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
-        this.startButton.style.display = 'none';
-        document.getElementById('menuButtons').style.display = 'flex';
-        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
-        window.addEventListener('keydown', e => this.handleKeyboard(e));
-        this.lives = 3; this.combo = 0;
-        document.getElementById('livesCount').textContent = this.lives;
-        // Show joystick if gyro not detected
-        this.joystickActive = !this.gyroAvailable;
-        this.startTimer();
-        this.levelIntroLevel    = this.level;
-        this.levelIntroProgress = 0.001;
-        this.levelIntroActive   = true;
-        this.tutorialActive     = (this.level === 1);
-        this.tutorialProgress   = 0;
-    }
 
     drawJoystick(ctx) {
         const bx = this.joystickBase.x,  by = this.joystickBase.y;
@@ -2233,32 +2184,6 @@ class TiltBallGame {
         ctx.restore();
     }
 
-    drawCalibrationScreen(ctx) {
-        const p = Math.min(this.calibrationSamples.length / 60, 1);
-        ctx.save();
-        // Dim background
-        ctx.fillStyle = 'rgba(0,0,0,0.75)';
-        ctx.fillRect(0, 0, this.W, this.H);
-        // Title
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle    = '#63b3ed';
-        ctx.font         = 'bold 16px Arial';
-        ctx.shadowColor  = '#63b3ed'; ctx.shadowBlur = 10;
-        ctx.fillText('CALIBRATING TILT…', this.W/2, this.H/2 - 50);
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font      = '12px Arial'; ctx.shadowBlur = 0;
-        ctx.fillText('Hold your device still', this.W/2, this.H/2 - 28);
-        // Progress bar
-        ctx.strokeStyle = '#63b3ed'; ctx.lineWidth = 2;
-        ctx.strokeRect(this.W/2-70, this.H/2-8, 140, 16);
-        ctx.fillStyle = '#63b3ed';
-        ctx.fillRect(this.W/2-68, this.H/2-6, 136*p, 12);
-        // Percentage
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Arial';
-        ctx.fillText(`${Math.round(p*100)}%`, this.W/2, this.H/2+22);
-        ctx.restore();
-    }
 
     // ─────────────────────────────────────────────────────────
     //  BACKGROUND THEME
