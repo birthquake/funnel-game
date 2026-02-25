@@ -190,39 +190,7 @@
             50%      { transform: rotate(90deg); }
         }
 
-        /* ── Splash screen ── */
-        .splash-screen {
-            position: fixed; inset: 0; z-index: 10000;
-            background: #0f0f23;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: opacity 0.6s ease;
-        }
-        .splash-screen.fade-out { opacity: 0; pointer-events: none; }
-        .splash-title {
-            font-size: 42px; font-weight: bold; letter-spacing: 4px;
-            background: linear-gradient(45deg, #63b3ed, #4fd1c7, #68d391);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: splashPulse 1.5s ease-in-out infinite;
-        }
-        .splash-sub {
-            font-size: 13px; color: rgba(255,255,255,0.5);
-            margin-top: 12px; letter-spacing: 2px;
-        }
-        .splash-ball {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #fff, #fc8181, #c53030);
-            margin-bottom: 30px;
-            box-shadow: 0 0 30px rgba(245,101,101,0.6);
-            animation: splashBounce 1s ease-in-out infinite;
-        }
-        @keyframes splashPulse {
-            0%,100% { opacity: 1; } 50% { opacity: 0.7; }
-        }
-        @keyframes splashBounce {
-            0%,100% { transform: translateY(0); }
-            50%      { transform: translateY(-18px); }
+            50%      { transform: translateY(-20px); box-shadow: 0 20px 40px rgba(245,101,101,.2); }
         }
 
         /* ── Emergency center button (overlaid bottom-left of canvas) ── */
@@ -242,13 +210,6 @@
     </style>
 </head>
 <body>
-
-<!-- ── Splash screen ── -->
-<div class="splash-screen" id="splashScreen">
-    <div class="splash-ball"></div>
-    <div class="splash-title">TILTSPHERE</div>
-    <div class="splash-sub">ULTIMATE BALL CHALLENGE</div>
-</div>
 
 <!-- ── Orientation lock ── -->
 <div class="orientation-overlay" id="orientationOverlay">
@@ -388,6 +349,7 @@
 </div>
 
 <script>
+
 // ═══════════════════════════════════════════════════════════════
 //  TiltSphere — Canvas Edition
 //  All game logic is identical to the DOM version.
@@ -446,9 +408,6 @@ class TiltBallGame {
         // 0=classic(red), 1=ocean(blue), 2=forest(green), 3=gold, 4=plasma(purple)
         this.activeSkin    = parseInt(localStorage.getItem('tiltSphereSkin') || '0');
 
-        // ── Splash ────────────────────────────────────────────
-        this.splashDone    = false;
-
         // ── Virtual joystick ──────────────────────────────────
         this.joystickActive   = false;  // shown when no gyro available
         this.joystickBase     = { x: 60, y: 290 };
@@ -456,12 +415,9 @@ class TiltBallGame {
         this.joystickTouchId  = null;
         this.gyroAvailable    = false;
 
-        // ── Tilt calibration ─────────────────────────────────
+        // ── Tilt calibration (offsets only) ─────────────────
         this.tiltOffsetBeta  = 0;
         this.tiltOffsetGamma = 0;
-        this.calibrating     = false;
-        this.calibrationSamples = [];
-        this.calibrationDone = false;
 
         // ── Tutorial (level 1 only) ───────────────────────────
         this.tutorialActive  = false;
@@ -545,12 +501,6 @@ class TiltBallGame {
             }, { once: true });
         }
 
-        // Show splash then fade
-        setTimeout(() => {
-            const splash = document.getElementById('splashScreen');
-            splash.classList.add('fade-out');
-            setTimeout(() => { splash.style.display = 'none'; this.splashDone = true; }, 600);
-        }, 2000);
 
         // Orientation lock
         this.setupOrientationLock();
@@ -897,14 +847,20 @@ class TiltBallGame {
 
     startGame() {
         this.initAudio();
-        // Check if device orientation is available — if so, calibrate first
-        if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-            // Non-iOS: just start calibration directly
-            this.startCalibration();
-        } else {
-            // iOS already granted permission via requestPermission, skip extra calibration step
-            this.finishCalibrationAndStart();
-        }
+        this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
+        this.startButton.style.display = 'none';
+        document.getElementById('menuButtons').style.display = 'flex';
+        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
+        window.addEventListener('keydown', e => this.handleKeyboard(e));
+        this.lives = 3; this.combo = 0;
+        document.getElementById('livesCount').textContent = this.lives;
+        this.joystickActive = !this.gyroAvailable;
+        this.startTimer();
+        this.levelIntroLevel    = this.level;
+        this.levelIntroProgress = 0.001;
+        this.levelIntroActive   = true;
+        this.tutorialActive     = (this.level === 1);
+        this.tutorialProgress   = 0;
     }
 
     handleOrientation(e) {
@@ -1286,11 +1242,6 @@ class TiltBallGame {
         // Draw virtual joystick
         if (this.joystickActive && this.gameRunning && !this.gamePaused && !this.levelIntroActive) {
             this.drawJoystick(ctx);
-        }
-
-        // Draw calibration screen
-        if (this.calibrating) {
-            this.drawCalibrationScreen(ctx);
         }
 
         // Draw level intro overlay (on top of everything)
@@ -2210,45 +2161,7 @@ class TiltBallGame {
     // ─────────────────────────────────────────────────────────
     //  TILT CALIBRATION
     // ─────────────────────────────────────────────────────────
-    startCalibration() {
-        this.calibrating       = true;
-        this.calibrationSamples = [];
-        this.calibrationDone   = false;
-        // Collect 60 samples (1 second) then average
-        const handler = (e) => {
-            if (!this.calibrating) return;
-            this.calibrationSamples.push({ beta: e.beta||0, gamma: e.gamma||0 });
-            if (this.calibrationSamples.length >= 60) {
-                window.removeEventListener('deviceorientation', handler);
-                const avgBeta  = this.calibrationSamples.reduce((s,v)=>s+v.beta, 0)  / 60;
-                const avgGamma = this.calibrationSamples.reduce((s,v)=>s+v.gamma, 0) / 60;
-                this.tiltOffsetBeta  = avgBeta;
-                this.tiltOffsetGamma = avgGamma;
-                this.calibrating     = false;
-                this.calibrationDone = true;
-                this.finishCalibrationAndStart();
-            }
-        };
-        window.addEventListener('deviceorientation', handler);
-    }
 
-    finishCalibrationAndStart() {
-        this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
-        this.startButton.style.display = 'none';
-        document.getElementById('menuButtons').style.display = 'flex';
-        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
-        window.addEventListener('keydown', e => this.handleKeyboard(e));
-        this.lives = 3; this.combo = 0;
-        document.getElementById('livesCount').textContent = this.lives;
-        // Show joystick if gyro not detected
-        this.joystickActive = !this.gyroAvailable;
-        this.startTimer();
-        this.levelIntroLevel    = this.level;
-        this.levelIntroProgress = 0.001;
-        this.levelIntroActive   = true;
-        this.tutorialActive     = (this.level === 1);
-        this.tutorialProgress   = 0;
-    }
 
     drawJoystick(ctx) {
         const bx = this.joystickBase.x,  by = this.joystickBase.y;
@@ -2271,32 +2184,6 @@ class TiltBallGame {
         ctx.restore();
     }
 
-    drawCalibrationScreen(ctx) {
-        const p = Math.min(this.calibrationSamples.length / 60, 1);
-        ctx.save();
-        // Dim background
-        ctx.fillStyle = 'rgba(0,0,0,0.75)';
-        ctx.fillRect(0, 0, this.W, this.H);
-        // Title
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle    = '#63b3ed';
-        ctx.font         = 'bold 16px Arial';
-        ctx.shadowColor  = '#63b3ed'; ctx.shadowBlur = 10;
-        ctx.fillText('CALIBRATING TILT…', this.W/2, this.H/2 - 50);
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.font      = '12px Arial'; ctx.shadowBlur = 0;
-        ctx.fillText('Hold your device still', this.W/2, this.H/2 - 28);
-        // Progress bar
-        ctx.strokeStyle = '#63b3ed'; ctx.lineWidth = 2;
-        ctx.strokeRect(this.W/2-70, this.H/2-8, 140, 16);
-        ctx.fillStyle = '#63b3ed';
-        ctx.fillRect(this.W/2-68, this.H/2-6, 136*p, 12);
-        // Percentage
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 13px Arial';
-        ctx.fillText(`${Math.round(p*100)}%`, this.W/2, this.H/2+22);
-        ctx.restore();
-    }
 
     // ─────────────────────────────────────────────────────────
     //  BACKGROUND THEME
