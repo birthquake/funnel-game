@@ -236,7 +236,7 @@
     <button class="start-button" id="startButton">START GAME</button>
     <div class="menu-buttons" id="menuButtons" style="display:none">
         <button class="menu-button" onclick="game.pauseGame()">Pause</button>
-        <button class="menu-button" onclick="game.saveGame()">Save</button>
+        <button class="menu-button" onclick="game.saveGame(true)">Save</button>
         <button class="menu-button" onclick="game.showSettings()">Settings</button>
         <button class="menu-button" onclick="game.resetProgress()">Reset</button>
         <button class="menu-button" id="skipButton" onclick="game.skipLevel()" style="display:none">Skip Level</button>
@@ -290,6 +290,17 @@
         <div style="display:flex;gap:10px;justify-content:center">
             <button onclick="game.confirmDailyChallenge()" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Play!</button>
             <button onclick="game.closeDailyModal()" style="background:#4a5568;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="askModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:22px;width:90%;max-width:300px;color:#fff;text-align:center">
+        <h3 id="askTitle" style="color:#63b3ed;margin-bottom:10px"></h3>
+        <p id="askMsg" style="font-size:13px;opacity:.85;margin-bottom:18px;line-height:1.4"></p>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button id="askYes" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold"></button>
+            <button id="askNo" style="background:#4a5568;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer"></button>
         </div>
     </div>
 </div>
@@ -413,6 +424,11 @@ class TiltBallGame {
         this.levelIntroLevel     = 1;
 
         this.time = 0;
+        this._rng = null;
+        this._bounceMul = 1;
+        this._accum = 0;
+        this._lastFrame = 0;
+        this._listenersAttached = false;
 
         this.levelConfigs = this.generateLevelConfigs();
 
@@ -430,6 +446,13 @@ class TiltBallGame {
 
         this.setupOrientationLock();
         this.renderLoop();
+    }
+
+    rand() { return (this.gameMode === 'daily' && this._rng) ? this._rng() : Math.random(); }
+
+    mechLabel(cfg) {
+        return ({ rotating:'SPINNERS', bouncy:'BOUNCY', maze:'MAZE', spiral:'ORBITING', chaos:'CHAOS', chaos_mode:'CHAOS',
+                  ultimate:'RELENTLESS', master_challenge:'LASERS', ultimate_precision:'PRECISION' })[cfg.specialMechanic] || '';
     }
 
     generateLevelConfigs() {
@@ -464,8 +487,8 @@ class TiltBallGame {
         const margin = Math.max(fs + 20, 30);
         let placed = false;
         for (let a = 0; a < 50; a++) {
-            this.funnelX = margin + Math.random() * (this.W - 2*margin - fs);
-            this.funnelY = margin + Math.random() * (this.H - 2*margin - fs);
+            this.funnelX = margin + this.rand() * (this.W - 2*margin - fs);
+            this.funnelY = margin + this.rand() * (this.H - 2*margin - fs);
             const cx = this.funnelX + fs/2, cy = this.funnelY + fs/2;
             if (Math.hypot(cx-165, cy-165) >= 120) { placed = true; break; }
         }
@@ -474,12 +497,14 @@ class TiltBallGame {
                 { x: this.W-fs-40, y: 40 }, { x: 40, y: this.H-fs-40 },
                 { x: this.W-fs-40, y: this.H-fs-40 }, { x: 40, y: 40 }
             ];
-            const f = fb[Math.floor(Math.random()*fb.length)];
+            const f = fb[Math.floor(this.rand()*fb.length)];
             this.funnelX = f.x; this.funnelY = f.y;
         }
 
         for (let i = 0; i < cfg.obstacles;       i++) this.spawnObstacle(false, cfg);
         for (let i = 0; i < cfg.movingObstacles; i++) this.spawnObstacle(true,  cfg);
+        if (cfg.specialMechanic === 'maze') this.addMazeWalls(fs);
+        this._bounceMul = cfg.specialMechanic === 'bouncy' ? 1.4 : 1;
 
         this.ballX = 165; this.ballY = 165;
         this.ballVelX = 0; this.ballVelY = 0;
@@ -508,13 +533,14 @@ class TiltBallGame {
 
     spawnObstacle(isMoving, cfg) {
         const fs   = Math.max(cfg.funnelSize, 30);
-        const size = 20 + Math.random() * 15;
+        const mech = cfg.specialMechanic;
+        const size = 20 + this.rand() * 15;
         let x, y, valid = false;
 
         for (let a = 0; a < 100; a++) {
             const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
-            const pp  = Math.random();
-            const pv  = (Math.random()-.5) * 120;
+            const pp  = this.rand();
+            const pv  = (this.rand()-.5) * 120;
             const pa  = Math.atan2(fcy-165, fcx-165);
             const perp = pa + Math.PI/2;
             x = (165 + (fcx-165)*pp + Math.cos(perp)*pv);
@@ -539,34 +565,61 @@ class TiltBallGame {
         }
 
         if (!valid) {
-            x = 30 + Math.random() * (this.W - 60 - size);
-            y = 30 + Math.random() * (this.H - 60 - size);
+            x = 30 + this.rand() * (this.W - 60 - size);
+            y = 30 + this.rand() * (this.H - 60 - size);
         }
 
         const dirs      = ['x','y','diag'];
-        const dir       = dirs[Math.floor(Math.random()*3)];
-        const speed     = 0.3 + Math.random() * 0.5;
-        const range     = 40  + Math.random() * 60;
-        const phase     = Math.random() * Math.PI * 2;
+        const speedMul  = ['chaos','chaos_mode','ultimate','ultimate_precision'].includes(mech) ? 1.4 : 1;
+        const dir       = (mech === 'spiral' && isMoving) ? 'orbit' : dirs[Math.floor(this.rand()*3)];
+        const speed     = (0.3 + this.rand() * 0.5) * speedMul;
+        const range     = 40  + this.rand() * 60;
+        const phase     = this.rand() * Math.PI * 2;
 
         const lvl = this.level;
         let type = 'rect';
-        if (lvl >= 40 && Math.random() < 0.2)      type = 'laser';
-        else if (lvl >= 20 && Math.random() < 0.25) type = 'spinner';
-        else if (lvl >= 10 && Math.random() < 0.3)  type = 'circle';
+        if (lvl >= 40 && this.rand() < 0.2)      type = 'laser';
+        else if (lvl >= 20 && this.rand() < 0.25) type = 'spinner';
+        else if (lvl >= 10 && this.rand() < 0.3)  type = 'circle';
 
-        let laserAngle = Math.random() * Math.PI;
-        let laserLength = 50 + Math.random() * 60;
-        let laserSweepSpeed = (0.015 + Math.random() * 0.02) * (Math.random() < 0.5 ? 1 : -1);
+        if (mech === 'rotating' && type === 'rect' && this.rand() < 0.5) type = 'spinner';
+        if ((mech === 'chaos' || mech === 'chaos_mode') && this.rand() < 0.4) type = this.rand() < 0.5 ? 'laser' : 'spinner';
+        if ((mech === 'master_challenge' || mech === 'ultimate_precision') && this.rand() < 0.25) type = 'laser';
+
+        let laserAngle = this.rand() * Math.PI;
+        let laserLength = 50 + this.rand() * 60;
+        let laserSweepSpeed = (0.015 + this.rand() * 0.02) * (this.rand() < 0.5 ? 1 : -1);
 
         this.obstacles.push({
             x, y, w: size, h: size,
             isMoving, dir, speed, range, startX: x, startY: y, phase,
             type,
-            spinAngle: 0, spinSpeed: (0.02 + Math.random() * 0.03) * (Math.random() < 0.5 ? 1 : -1),
+            spinAngle: 0, spinSpeed: (0.02 + this.rand() * 0.03) * (this.rand() < 0.5 ? 1 : -1),
             laserAngle, laserLength, laserSweepSpeed,
-            hitThisLevel: false
+            hitThisLevel: false,
+            orbitCx: this.funnelX + fs/2, orbitCy: this.funnelY + fs/2, orbitR: 50 + range
         });
+    }
+
+    addMazeWalls(fs) {
+        const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
+        const n = 2 + Math.floor(this.rand() * 2);
+        for (let i = 0; i < n; i++) {
+            for (let a = 0; a < 40; a++) {
+                const horiz = this.rand() < 0.5;
+                const len = 90 + this.rand() * 50, th = 12;
+                const w = horiz ? len : th, h = horiz ? th : len;
+                const x = 20 + this.rand() * (this.W - 40 - w), y = 20 + this.rand() * (this.H - 40 - h);
+                const clearBall   = x > 165 + 40 || x + w < 165 - 20 || y > 165 + 40 || y + h < 165 - 20;
+                const clearFunnel = x > fcx + fs/2 + 25 || x + w < fcx - fs/2 - 25 || y > fcy + fs/2 + 25 || y + h < fcy - fs/2 - 25;
+                const clearOthers = this.obstacles.every(o => x > o.x + o.w + 10 || x + w < o.x - 10 || y > o.y + o.h + 10 || y + h < o.y - 10);
+                if (clearBall && clearFunnel && clearOthers) {
+                    this.obstacles.push({ x, y, w, h, isMoving:false, dir:'x', speed:0, range:0, startX:x, startY:y, phase:0, type:'rect',
+                        spinAngle:0, spinSpeed:0, laserAngle:0, laserLength:0, laserSweepSpeed:0, hitThisLevel:false });
+                    break;
+                }
+            }
+        }
     }
 
     setupEventListeners() {
@@ -725,6 +778,11 @@ class TiltBallGame {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const p = await DeviceOrientationEvent.requestPermission();
                 if (p === 'granted') this.startGame();
+                else {
+                    this.gyroAvailable = false;
+                    this.startGame();
+                    this.showNotification('Motion access denied', 'Using the on-screen joystick instead. To tilt, allow Motion & Orientation in Safari settings and reload.', 5000);
+                }
             } else { this.startGame(); }
         } catch(e) { this.startGame(); }
     }
@@ -734,8 +792,11 @@ class TiltBallGame {
         this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
         this.startButton.style.display = 'none';
         document.getElementById('menuButtons').style.display = 'flex';
-        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
-        window.addEventListener('keydown', e => this.handleKeyboard(e));
+        if (!this._listenersAttached) {
+            this._listenersAttached = true;
+            window.addEventListener('deviceorientation', e => this.handleOrientation(e));
+            window.addEventListener('keydown', e => this.handleKeyboard(e));
+        }
         this.lives = 3; this.combo = 0;
         document.getElementById('livesCount').textContent = this.lives;
         this.joystickActive = !this.gyroAvailable;
@@ -816,6 +877,8 @@ class TiltBallGame {
             const t = this.time * o.speed * Math.PI * 2 / 3 + o.phase;
             if      (o.dir === 'x')  { o.x = o.startX + Math.sin(t) * o.range; }
             else if (o.dir === 'y')  { o.y = o.startY + Math.sin(t) * o.range; }
+            else if (o.dir === 'orbit') { o.x = o.orbitCx + Math.cos(t) * o.orbitR - o.w/2;
+                                          o.y = o.orbitCy + Math.sin(t) * o.orbitR - o.h/2; }
             else                     { o.x = o.startX + Math.sin(t) * o.range * .7;
                                        o.y = o.startY + Math.cos(t) * o.range * .7; }
             o.x = Math.max(5, Math.min(o.x, this.W - o.w - 5));
@@ -837,8 +900,8 @@ class TiltBallGame {
                     this.ballX += nx * overlap;
                     this.ballY += ny * overlap;
                     const dot = this.ballVelX*nx + this.ballVelY*ny;
-                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65;
-                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65;
+                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65 * this._bounceMul;
+                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65 * this._bounceMul;
                 }
             } else if (o.type === 'laser') {
                 const cx = o.x + o.w/2, cy = o.y + o.h/2;
@@ -860,8 +923,8 @@ class TiltBallGame {
                     this.ballX += nx * overlap;
                     this.ballY += ny * overlap;
                     const dot = this.ballVelX*nx + this.ballVelY*ny;
-                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65;
-                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65;
+                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65 * this._bounceMul;
+                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65 * this._bounceMul;
                 }
             } else {
                 if (this.ballX < o.x+o.w && this.ballX+this.ballSize > o.x &&
@@ -874,12 +937,12 @@ class TiltBallGame {
                     const minOverlapX = Math.min(overlapLeft, overlapRight);
                     const minOverlapY = Math.min(overlapTop, overlapBottom);
                     if (minOverlapX < minOverlapY) {
-                        if (overlapLeft < overlapRight) { this.ballX = o.x + o.w; this.ballVelX = Math.abs(this.ballVelX) * 0.6; }
-                        else { this.ballX = o.x - this.ballSize; this.ballVelX = -Math.abs(this.ballVelX) * 0.6; }
+                        if (overlapLeft < overlapRight) { this.ballX = o.x + o.w; this.ballVelX = Math.abs(this.ballVelX) * 0.6 * this._bounceMul; }
+                        else { this.ballX = o.x - this.ballSize; this.ballVelX = -Math.abs(this.ballVelX) * 0.6 * this._bounceMul; }
                         this.ballVelY *= 0.85;
                     } else {
-                        if (overlapTop < overlapBottom) { this.ballY = o.y + o.h; this.ballVelY = Math.abs(this.ballVelY) * 0.6; }
-                        else { this.ballY = o.y - this.ballSize; this.ballVelY = -Math.abs(this.ballVelY) * 0.6; }
+                        if (overlapTop < overlapBottom) { this.ballY = o.y + o.h; this.ballVelY = Math.abs(this.ballVelY) * 0.6 * this._bounceMul; }
+                        else { this.ballY = o.y - this.ballSize; this.ballVelY = -Math.abs(this.ballVelY) * 0.6 * this._bounceMul; }
                         this.ballVelX *= 0.85;
                     }
                     this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
@@ -978,10 +1041,15 @@ class TiltBallGame {
         }
     }
 
-    renderLoop() {
-        this.update();
+    renderLoop(ts) {
+        if (ts === undefined) ts = performance.now();
+        if (!this._lastFrame) this._lastFrame = ts;
+        this._accum += Math.min(ts - this._lastFrame, 100);
+        this._lastFrame = ts;
+        const STEP = 1000 / 60;
+        while (this._accum >= STEP) { this.update(); this._accum -= STEP; }
         this.draw();
-        requestAnimationFrame(() => this.renderLoop());
+        requestAnimationFrame(t => this.renderLoop(t));
     }
 
     draw() {
@@ -1021,7 +1089,7 @@ class TiltBallGame {
     drawLevelIntro(ctx) {
         const p = this.levelIntroProgress;
         let alpha, scale;
-        if (p < 0.3)      { alpha = p / 0.3; scale = 0.4 + (p / 0.3) * 0.6; }
+        if (p < 0.3)      { alpha = p / 0.3; scale = 0.4 + (p / 0.3) * 0.6 * this._bounceMul; }
         else if (p < 0.7) { alpha = 1; scale = 1; }
         else              { alpha = 1 - (p - 0.7) / 0.3; scale = 1 + (p - 0.7) * 0.5; }
 
@@ -1048,6 +1116,8 @@ class TiltBallGame {
 
         ctx.font = 'bold 13px Arial'; ctx.fillStyle = col; ctx.shadowBlur = 8;
         ctx.fillText(diff, 0, 20);
+        const ml = this.mechLabel(cfg);
+        if (ml) { ctx.font = 'bold 11px Arial'; ctx.fillText(ml, 0, 38); }
 
         ctx.shadowBlur = 0; ctx.strokeStyle = col; ctx.globalAlpha = alpha * 0.6; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(-80, 0); ctx.lineTo(-28, 0); ctx.stroke();
@@ -1347,12 +1417,12 @@ class TiltBallGame {
 
         if (this.settings.haptic && navigator.vibrate) navigator.vibrate([80,50,80,50,80,50,200]);
         this.soundLevelComplete();
-        this.checkAchievements();
 
         if (this.gameMode === 'daily')   this.saveDailyScore();
         if (this.gameMode === 'endless') { this.endlessLevel++; this.saveEndlessScore(); }
 
         this.level++;
+        this.checkAchievements();
 
         if (this.gameMode === 'normal' && this.level > this.levelConfigs.length) { this.endGame(); return; }
 
@@ -1393,7 +1463,8 @@ class TiltBallGame {
 
     endGame() {
         this.gameRunning = false; this.levelCompleting = false;
-        alert(`🎉 Congratulations!\n\nYou completed all ${this.levelConfigs.length} levels!\nFinal Score: ${this.score}\nBest Score: ${this.bestScore}\n\nYou are a TiltSphere Master!`);
+        this.stopTimer();
+        this.ask('🎉 Congratulations!', `You completed all ${this.levelConfigs.length} levels! Final score: ${this.score}. Best: ${this.bestScore}. You are a TiltSphere Master!`, null, 'Nice!');
         this.level = 1; this.score = 0;
         this.startButton.style.display = 'block'; this.startButton.textContent = 'PLAY AGAIN';
         document.getElementById('menuButtons').style.display = 'none';
@@ -1423,16 +1494,35 @@ class TiltBallGame {
 
     skipLevel() {
         if (this.levelAttempts < 10) return;
-        if (confirm("Skip this level? You won't get points for it.")) {
+        this.ask('Skip this level?', "You won't get points for it.", () => {
             this.level++;
-            if (this.level > this.levelConfigs.length) { this.endGame(); return; }
+            if (this.gameMode === 'normal' && this.level > this.levelConfigs.length) { this.endGame(); return; }
             this.saveGame(); this.updateUI(); this.setupLevel();
             this.showNotification('Level Skipped','No points awarded',2000);
-        }
+        }, 'Skip', 'Cancel');
+    }
+
+    ask(title, msg, onYes, yesLabel='OK', noLabel=null) {
+        const modal = document.getElementById('askModal');
+        const yes = document.getElementById('askYes'), no = document.getElementById('askNo');
+        document.getElementById('askTitle').textContent = title;
+        document.getElementById('askMsg').textContent   = msg;
+        yes.textContent = yesLabel;
+        no.textContent  = noLabel || '';
+        no.style.display = noLabel ? '' : 'none';
+        const wasLive = this.gameRunning && !this.gamePaused;
+        if (wasLive) this.gamePaused = true;
+        const close = () => { modal.style.display = 'none'; if (wasLive) this.gamePaused = false; };
+        yes.onclick = () => { close(); if (onYes) onYes(); };
+        no.onclick  = close;
+        modal.style.display = 'flex';
     }
 
     resetProgress() {
-        if (!confirm('Reset all progress? This cannot be undone.')) return;
+        this.ask('Reset all progress?', 'This cannot be undone.', () => this.doReset(), 'Reset', 'Cancel');
+    }
+
+    doReset() {
         try { ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings','tiltSphereScores'].forEach(k => localStorage.removeItem(k)); } catch(e) {}
         this.level=1; this.score=0; this.bestScore=0; this.achievements=[]; this.lives=3; this.combo=0;
         this.levelAttempts=0; this.gameRunning=false; this.levelCompleting=false;
@@ -1446,7 +1536,11 @@ class TiltBallGame {
         document.getElementById('saveStatus').textContent='Progress reset';
     }
 
-    saveGame() {
+    saveGame(manual=false) {
+        if (this.gameMode !== 'normal') {
+            if (manual) this.showNotification('Save unavailable', 'Only the main campaign can be saved', 2000);
+            return;
+        }
         try {
             localStorage.setItem('tiltSphereSave', JSON.stringify({ level:this.level, score:this.score, achievements:this.achievements, timestamp:Date.now(), version:'3.0' }));
             const ind = document.getElementById('saveIndicator');
@@ -1470,10 +1564,11 @@ class TiltBallGame {
     checkAchievements() {
         const n = [];
         const push = name => { if (!this.achievements.includes(name)) { n.push(name); this.achievements.push(name); } };
-        if (this.level === 2) push('first_win');
-        [10,25,50,75,100,125,150,175,200,225,250].forEach(m => { if (this.level===m+1) push(`level_${m}`); });
+        const normal = this.gameMode === 'normal';
+        if (normal && this.level === 2) push('first_win');
+        if (normal) [10,25,50,75,100,125,150,175,200,225,250].forEach(m => { if (this.level===m+1) push(`level_${m}`); });
         [{l:21,n:'tier_easy'},{l:41,n:'tier_medium'},{l:61,n:'tier_hard'},{l:81,n:'tier_expert'},{l:101,n:'tier_legendary'},{l:151,n:'tier_master'},{l:201,n:'tier_grandmaster'},{l:251,n:'tier_ultimate'}]
-            .forEach(t => { if (this.level===t.l) push(t.n); });
+            .forEach(t => { if (normal && this.level===t.l) push(t.n); });
         [{s:5000,n:'score_5k'},{s:10000,n:'score_10k'},{s:25000,n:'score_25k'},{s:50000,n:'score_50k'},{s:100000,n:'score_100k'}]
             .forEach(a => { if (this.score>=a.s) push(a.n); });
         if (n.length) {
@@ -1621,6 +1716,8 @@ class TiltBallGame {
         document.getElementById('gameOverModal').style.display = 'none';
         this.gameOverActive = false;
         this.level = 1; this.score = 0; this.lives = 3; this.combo = 0;
+        if (this.gameMode === 'daily') this._rng = this._seededRng(this.dailySeed);
+        if (this.gameMode === 'endless') this.endlessLevel = 1;
         this.setupLevel(); this.updateUI(); this.startTimer();
         this.gameRunning = true;
         this.levelIntroLevel = this.level; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
@@ -1858,7 +1955,7 @@ class TiltBallGame {
             this.closeSettings();
             document.getElementById('saveStatus').textContent='Settings saved!';
             setTimeout(()=>{ if(document.getElementById('saveStatus').textContent.includes('Settings saved!')) document.getElementById('saveStatus').textContent=''; },3000);
-        } catch(e) { alert('Failed to save settings.'); }
+        } catch(e) { this.showNotification('Save failed','Storage may be full',2500); }
     }
 }
 
