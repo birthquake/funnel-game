@@ -391,6 +391,7 @@
             <button onclick="game.restartGame()" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Play Again</button>
             <button onclick="game.showLeaderboard()" style="background:#ffd700;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Scores</button>
         </div>
+        <button id="gameOverClip" onclick="game.shareClip()" style="display:none;margin:12px auto 0;background:transparent;color:#63b3ed;border:1px solid #63b3ed;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:bold;align-items:center;gap:6px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-share"/></svg> Share clip</button>
         <button id="gameOverShare" onclick="game.shareResult()" style="display:none;margin:12px auto 0;background:transparent;color:#68d391;border:1px solid #68d391;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:bold;align-items:center;gap:6px"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-share"/></svg> Share result</button>
     </div>
 </div>
@@ -456,6 +457,7 @@
         </div>
         <div style="margin-bottom:15px">
             <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="assistToggle" checked><span>Assist after repeated fails</span></label>
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="clipsToggle" checked><span>Record highlight clips</span></label>
         </div>
         <div style="margin-bottom:20px">
             <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="autoPauseToggle" checked><span>Auto-pause when window loses focus</span></label>
@@ -577,7 +579,7 @@ class TiltBallGame {
 
         this.achievements = JSON.parse(localStorage.getItem('tiltSphereAchievements') || '[]');
 
-        this.settings = { sound:true, haptic:true, trail:true, sensitivity:50, autoPause:true, music:true, colourblind:false, assist:true };
+        this.settings = { sound:true, haptic:true, trail:true, sensitivity:50, autoPause:true, music:true, colourblind:false, assist:true, clips:true };
         try {
             const s = localStorage.getItem('tiltSphereSettings');
             if (s) this.settings = { ...this.settings, ...JSON.parse(s) };
@@ -631,6 +633,7 @@ class TiltBallGame {
         this.updateUI();
         this.setupEventListeners();
         this.setupAutoPause();
+        this.clipInit();
         this.showTitle();
         this.checkIncomingChallenge();
 
@@ -1730,6 +1733,10 @@ class TiltBallGame {
         if (this.tutorialActive && this.gameRunning && !this.levelIntroActive) this.drawTutorial(ctx);
         if (this.joystickActive && this.gameRunning && !this.gamePaused && !this.levelIntroActive) this.drawJoystick(ctx);
         if (this.levelIntroActive) this.drawLevelIntro(ctx);
+        if (this._recs && this._recs.length && !this.levelIntroActive) {
+            ctx.save(); ctx.globalAlpha = 0.45; ctx.fillStyle = '#fff'; ctx.font = '600 10px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('TiltSphere  funnel-game.vercel.app', this.W / 2, this.H - 7); ctx.restore();
+        }
 
         ctx.restore();
 
@@ -2514,7 +2521,7 @@ class TiltBallGame {
         this.level=1; this.maxLevel=1; this.stars={}; this.bestTimes={}; this.seen={}; this.score=0; this.bestScore=0; this.achievements=[]; this.lives=3; this.combo=0;
         this.levelAttempts=0; this.gameRunning=false; this.levelCompleting=false;
         this.stopTimer();
-        this.settings={ sound:true,haptic:true,trail:true,sensitivity:50,autoPause:true, music:true, colourblind:false, assist:true };
+        this.settings={ sound:true,haptic:true,trail:true,sensitivity:50,autoPause:true, music:true, colourblind:false, assist:true, clips:true };
         document.body.classList.remove('playing'); this.startButton.style.display='block'; this.startButton.textContent='START GAME'; this.showTitle(); document.getElementById('levelsButton').style.display='';
         document.getElementById('menuButtons').style.display='none';
         document.getElementById('skipLevelHint').classList.remove('show');
@@ -2645,6 +2652,7 @@ class TiltBallGame {
         document.getElementById('musicToggle').checked          = this.settings.music;
         document.getElementById('colourblindToggle').checked    = this.settings.colourblind;
         document.getElementById('assistToggle').checked         = this.settings.assist;
+        document.getElementById('clipsToggle').checked          = this.settings.clips !== false;
         const sl = document.getElementById('sensitivitySlider');
         sl.oninput = () => document.getElementById('sensitivityValue').textContent = sl.value;
         document.getElementById('settingsModal').style.display = 'flex';
@@ -2740,6 +2748,7 @@ class TiltBallGame {
     }
 
     triggerGameOver(reason) {
+        this.clipFinish();
         this.gameRunning = false; this.levelCompleting = false;
         this.stopTimer(); this.gameOverActive = true;
         const rush = this.gameMode === 'rush';
@@ -2754,12 +2763,14 @@ class TiltBallGame {
         if (rush) this.prepareRushCard();
         document.getElementById('gameOverShare').style.display = ((this.gameMode === 'daily' && this.getDailyBest()) || (rush && this.rushCleared > 0)) ? 'inline-flex' : 'none';
         if (this.gameMode === 'daily') this.prepareDailyCard();
+        document.getElementById('gameOverClip').style.display = 'none';
         document.getElementById('gameOverModal').style.display = 'flex';
         if (this.settings.haptic && navigator.vibrate) navigator.vibrate([400,100,400]);
     }
 
     restartGame() {
         document.getElementById('gameOverModal').style.display = 'none';
+        this._clip = null;
         this.endFriendChallenge();
         this.gameOverActive = false;
         this.fadeThen(() => {
@@ -3152,6 +3163,79 @@ class TiltBallGame {
         this.shareWithCard(`I cleared ${n} ${n === 1 ? 'level' : 'levels'} in a 30 second TiltSphere Rush. Can you beat it?`, SITE_URL, this._rushCard && this._rushCard.key === key ? this._rushCard : null);
     }
 
+    // ---- Highlight clips -------------------------------------------------
+    // Two recorders run staggered (a new one every 8s, each lives 16s), so whenever the game ends
+    // the oldest one holds the last 8 to 16 seconds of play.
+    clipSupported() { return !!(window.MediaRecorder && this.canvas && this.canvas.captureStream); }
+    clipMime() {
+        for (const t of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']) {
+            try { if (MediaRecorder.isTypeSupported(t)) return t; } catch(e) {}
+        }
+        return '';
+    }
+    clipInit() {
+        this._recs = []; this._clip = null;
+        if (!this.clipSupported()) return;
+        setInterval(() => this.clipTick(), 1000);
+    }
+    clipTick() {
+        const live = this.gameRunning && !this.gamePaused && !this.levelIntroActive && !this.gameOverActive && !this.levelCompleting && this.settings.clips !== false && !document.hidden;
+        const now = Date.now();
+        if (!live) { if (this._recs.length) this.clipDiscard(this._recs.splice(0)); return; }
+        const old = this._recs.filter(r => now - r.t > 16000);
+        if (old.length) { this._recs = this._recs.filter(r => !old.includes(r)); this.clipDiscard(old); }
+        if (!this._recs.length || now - this._recs[this._recs.length - 1].t >= 8000) this.clipStartOne();
+    }
+    clipStartOne() {
+        try {
+            const mime = this.clipMime(), stream = this.canvas.captureStream(30);
+            const rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 2000000 } : { videoBitsPerSecond: 2000000 });
+            const r = { rec, stream, chunks: [], t: Date.now(), mime: rec.mimeType || mime };
+            rec.ondataavailable = e => { if (e.data && e.data.size) r.chunks.push(e.data); };
+            rec.start(1000);
+            this._recs.push(r);
+        } catch(e) { this._recsFailed = (this._recsFailed || 0) + 1; if (this._recsFailed > 2) this.settings.clips = false; }
+    }
+    clipDiscard(list) {
+        list.forEach(r => { try { r.rec.ondataavailable = null; if (r.rec.state !== 'inactive') r.rec.stop(); r.stream.getTracks().forEach(t => t.stop()); } catch(e) {} });
+    }
+    // Called the moment the game ends: takes the oldest recording and turns it into a shareable file.
+    clipFinish() {
+        this._clip = null;
+        const recs = this._recs || []; this._recs = [];
+        if (!recs.length) return;
+        const best = recs[0], rest = recs.slice(1);
+        this.clipDiscard(rest);
+        if (Date.now() - best.t < 2500) { this.clipDiscard([best]); return; }   // too short to be worth sharing
+        // let the final moments land in the recording, then close it
+        setTimeout(() => {
+            best.rec.onstop = () => {
+                try { best.stream.getTracks().forEach(t => t.stop()); } catch(e) {}
+                const blob = new Blob(best.chunks, { type: (best.mime || 'video/webm').split(';')[0] });
+                if (blob.size < 2000) return;
+                this._clip = { blob, secs: Math.round((Date.now() - best.t) / 1000) };
+                const btn = document.getElementById('gameOverClip');
+                if (btn && this.gameOverActive) btn.style.display = 'inline-flex';
+            };
+            try { if (best.rec.state !== 'inactive') best.rec.stop(); else best.rec.onstop(); } catch(e) {}
+        }, 700);
+    }
+    async shareClip() {
+        const c = this._clip; if (!c) return;
+        const ext = c.blob.type.includes('mp4') ? 'mp4' : 'webm';
+        const text = this.gameMode === 'rush' ? 'My TiltSphere Rush run. Can you do better?' : `My TiltSphere run (level ${this.level}). Can you do better?`;
+        try {
+            const file = new File([c.blob], `tiltsphere-clip.${ext}`, { type: c.blob.type });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text, url: SITE_URL }); return; }
+        } catch(e) { if (e && e.name === 'AbortError') return; }
+        // no file sharing on this device: save the clip so it can be posted by hand
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(c.blob); a.download = `tiltsphere-clip.${ext}`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        this.showNotification('Clip saved', 'Find it in your downloads', 2500);
+    }
+
     shareResult() { if (this.gameMode === 'rush') this.shareRush(); else this.shareDaily(); }
 
     getEndlessConfig() {
@@ -3226,6 +3310,7 @@ class TiltBallGame {
         this.settings.music       = document.getElementById('musicToggle').checked;
         this.settings.colourblind = document.getElementById('colourblindToggle').checked;
         this.settings.assist      = document.getElementById('assistToggle').checked;
+        this.settings.clips       = document.getElementById('clipsToggle').checked;
         try {
             localStorage.setItem('tiltSphereSettings', JSON.stringify(this.settings));
             this.closeSettings();
