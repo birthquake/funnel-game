@@ -13,14 +13,16 @@ Open `index.html` on a phone (or serve the folder with any static host, such as 
 ## How it works
 
 - **Goal:** get the ball into the funnel before the timer runs out. You have 3 lives.
-- **Stars:** each level gives up to 3 stars: 1 for finishing, +1 for no hits, +1 for finishing with half the time left. Replay levels from **Menu > Levels**.
+- **Stars and goals:** each level gives up to 3 stars: 1 for finishing, +1 for no hits, +1 for finishing within half the time limit. The goal is shown at the start of every level, and your best time is saved. Replay levels from **Menu > Levels**.
 - **Combos:** hit-free levels build a score multiplier.
 - **Power-ups** (from level 5): ⏱ freezes the timer, 🛡 blocks one hit, 🐢 slows the obstacles.
-- **Obstacles:** blocks, bumpers, spinners and lasers. From the *expert* tier, lasers cost a life. From *master* onward the funnel drifts.
+- **Losing lives:** red mines (from level 6) and lasers cost a life. Running out of time does not cost a life; the level simply restarts.
+- **New things are introduced one at a time:** the first time a new obstacle or power-up appears, the level intro tells you what it does.
+- **Obstacles:** blocks, bumpers, spinners, mines and lasers. From the *master* tier the funnel drifts.
 - **Special levels:** spinners, bouncy walls, mazes, orbiting obstacles, chaos.
 - **Assist:** after two lives lost on one level, obstacles slow down and you get +8 seconds (can be turned off in Settings).
-- **Modes:** Campaign, Daily Challenge (same layout for everyone each day), Endless.
-- **Skins** unlock through achievements.
+- **Modes:** Campaign, Daily Challenge (same layout for everyone each day, with a day streak, playable from the title screen), Endless.
+- **Skins** unlock by beating levels. The skin screen shows your progress toward each one.
 
 ### Settings
 

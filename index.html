@@ -149,6 +149,13 @@
             background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
         }
         .title-icon span { display: block; font-size: 9px; letter-spacing: .5px; opacity: .65; margin-top: 2px; }
+        .daily-btn {
+            width: min(80vw, 280px); padding: 10px 14px; border-radius: 12px; cursor: pointer; color: #fff;
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 8px; font-size: 14px; font-weight: 700;
+            background: rgba(104,211,145,.08); border: 1px solid rgba(104,211,145,.45);
+        }
+        .daily-btn span { white-space: nowrap; }
+        .daily-btn small { flex-basis: 100%; text-align: center; font-size: 10px; font-weight: 600; color: #68d391; }
         #titleStats { font-size: 11px; opacity: .55; margin-top: 6px; }
 
         .controls {
@@ -221,6 +228,11 @@
         #leaderboardModal, #gameOverModal, #skinModal, #dailyModal, #settingsModal, #askModal, #levelModal, #menuSheet { animation: modalIn .25s ease; }
         @keyframes boardIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
         .game-container.boardIn { animation: boardIn .4s ease; }
+        .ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; display: inline-block; flex: none; }
+        .sheet-btn .ic { margin-right: 8px; }
+        .rotate-icon .ic { width: 64px; height: 64px; }
+        .heart-on { color: #f56565; } .heart-off { color: #4a5568; }
+        .title-icon .ic { width: 22px; height: 22px; vertical-align: 0; }
         .sheet-btn { display: block; width: 100%; margin: 6px 0; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; background: linear-gradient(45deg, #4a5568, #63b3ed); color: #fff; }
         .sheet-btn.danger { background: linear-gradient(45deg, #742a2a, #f56565); }
         .level-cell { padding: 8px 0 6px; border-radius: 8px; font-size: 12px; font-weight: bold; text-align: center; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); color: #fff; cursor: pointer; }
@@ -229,9 +241,10 @@
     </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/></symbol><symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/></symbol><symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-levels" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><path d="M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM4 10.5h16M8 3.5V7M16 3.5V7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-2.7-3.6-4-5.5-4a4 4 0 0 0 0 8c1.9 0 3.5-1.3 5.5-4zm0 0c2 2.7 3.6 4 5.5 4a4 4 0 0 0 0-8c-1.9 0-3.5 1.3-5.5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-skins" viewBox="0 0 24 24"><path d="M12 3.5c3.5 4.2 6 7.3 6 10.2a6 6 0 0 1-12 0c0-2.9 2.5-6 6-10.2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 4.5v5M9 14.5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 11.2a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5l9 7-9 7zM18 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.4A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z" fill="currentColor" stroke="none"/></symbol><symbol id="i-heart-off" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.4A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><path d="M7 11h10v9H7zM9 11V8a3 3 0 0 1 6 0v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.4-3 7.8-7 9.5-4-1.7-7-5.1-7-9.5V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4.5l3 1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 4h10M7 20h10M8 4c0 4 4 5 4 8s-4 4-4 8M16 4c0 4-4 5-4 8s4 4 4 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-mine" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8z" fill="currentColor" stroke="none"/></symbol><symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z" fill="currentColor" stroke="none"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .3 1.5 1 2 2 2 0-3-1-5 1-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-assist" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>
 
 <div class="orientation-overlay" id="orientationOverlay">
-    <div class="rotate-icon">📱</div>
+    <div class="rotate-icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-phone"/></svg></div>
     <div style="font-size:18px;font-weight:bold;margin-bottom:10px">Please rotate your device</div>
     <div style="font-size:13px;opacity:.7">TiltSphere is designed for portrait mode</div>
 </div>
@@ -240,7 +253,7 @@
     <div class="hud">
         <div class="hud-cell"><div class="hud-label">LEVEL<span id="difficultyBadge" class="difficulty-badge difficulty-easy">EASY</span></div><div class="hud-value" id="level">1</div></div>
         <div class="hud-cell"><div class="hud-label">SCORE</div><div class="hud-value" id="score">0</div></div>
-        <div class="hud-cell" id="livesDisplay"><div class="hud-label">LIVES</div><div class="hud-value"><span id="livesHearts">❤️❤️❤️</span><span id="livesCount" style="display:none">3</span></div></div>
+        <div class="hud-cell" id="livesDisplay"><div class="hud-label">LIVES</div><div class="hud-value"><span id="livesHearts"><svg class="ic heart-on" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg><svg class="ic heart-on" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg><svg class="ic heart-on" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg></span><span id="livesCount" style="display:none">3</span></div></div>
         <div class="hud-cell" id="timerDisplay"><div class="hud-label">TIME</div><div class="hud-value" id="timerCount">--</div></div>
     </div>
     <div class="time-bar"><div class="time-fill" id="timeFill"></div></div>
@@ -266,11 +279,11 @@
 <div class="controls">
     <div style="display:none"><button class="start-button" id="startButton">START GAME</button><button class="menu-button" id="levelsButton">Levels</button></div>
     <div class="menu-buttons" id="menuButtons" style="display:none">
-        <button class="menu-button" onclick="game.pauseGame()">⏸ Pause</button>
-        <button class="menu-button" onclick="game.openMenu()">☰ Menu</button>
+        <button class="menu-button" onclick="game.pauseGame()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-pause"/></svg> Pause</button>
+        <button class="menu-button" onclick="game.openMenu()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-menu"/></svg> Menu</button>
     </div>
     <div style="opacity:.55;font-size:11px">Tilt your device to guide the ball into the target</div>
-    <div class="skip-level-hint" id="skipLevelHint">Having trouble? You can skip this level from ☰ Menu</div>
+    <div class="skip-level-hint" id="skipLevelHint">Having trouble? You can skip this level from the Menu</div>
     <div style="margin-top:5px;font-size:10px;opacity:.6;min-height:12px" id="saveStatus"></div>
 </div>
 
@@ -279,40 +292,41 @@
     <div class="tagline">TILT · ROLL · DROP</div>
     <canvas id="titleCanvas" width="320" height="180"></canvas>
     <button class="play-btn" id="playButton" onclick="game.onPlay()">PLAY</button>
+    <button class="daily-btn" onclick="game.startDailyChallenge()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-calendar"/></svg> <span>Daily Challenge</span><small id="dailyStatus"></small></button>
     <div class="title-row">
-        <button class="title-icon" onclick="game.showLevelSelect()">🗺️<span>Levels</span></button>
-        <button class="title-icon" onclick="game.showSkinPicker()">🎨<span>Skins</span></button>
-        <button class="title-icon" onclick="game.showLeaderboard()">🏆<span>Scores</span></button>
-        <button class="title-icon" onclick="game.showSettings()">⚙️<span>Settings</span></button>
+        <button class="title-icon" onclick="game.showLevelSelect()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-levels"/></svg><span>Levels</span></button>
+        <button class="title-icon" onclick="game.showSkinPicker()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-skins"/></svg><span>Skins</span></button>
+        <button class="title-icon" onclick="game.showLeaderboard()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"/></svg><span>Scores</span></button>
+        <button class="title-icon" onclick="game.showSettings()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sliders"/></svg><span>Settings</span></button>
     </div>
     <div id="titleStats"></div>
 </div>
 
-<div id="fadeLayer" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;z-index:250"></div>
+<div id="fadeLayer" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .17s;z-index:250"></div>
 
 <div id="menuSheet" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:18px;width:90%;max-width:300px;max-height:90vh;overflow-y:auto;color:#fff">
         <h3 style="text-align:center;color:#63b3ed;margin-bottom:8px">Menu</h3>
-        <div style="display:flex;justify-content:space-around;font-size:12px;margin-bottom:6px"><span>🏅 Best <b id="bestScore">0</b></span><span>🏆 <b id="achievementCount">0</b> achievements</span></div>
+        <div style="display:flex;justify-content:space-around;font-size:12px;margin-bottom:6px"><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-star"/></svg> Best <b id="bestScore">0</b></span><span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"/></svg> <b id="achievementCount">0</b> achievements</span></div>
         <div class="progress-meter" style="width:100%;margin:4px 0 2px"><div class="progress-fill" id="progressFill"></div></div>
         <div style="font-size:10px;opacity:.7;text-align:center;margin-bottom:8px">Progress <span id="progressLevel">0%</span></div>
-        <button class="sheet-btn" style="background:linear-gradient(45deg,#2f855a,#68d391)" onclick="game.closeMenu()">▶ Resume</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.showLevelSelect())">🗺️ Levels</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.startDailyChallenge())">📅 Daily Challenge</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.startEndlessMode())">♾️ Endless Mode</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.showSkinPicker())">🎨 Skins</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.showLeaderboard())">🏆 Scores</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.showSettings())">⚙️ Settings</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.calibrate())">🎯 Calibrate tilt</button>
-        <button class="sheet-btn" onclick="game.menuDo(()=>game.saveGame(true))">💾 Save</button>
-        <button class="sheet-btn" id="skipButton" style="display:none" onclick="game.menuDo(()=>game.skipLevel())">⏭ Skip level</button>
+        <button class="sheet-btn" style="background:linear-gradient(45deg,#2f855a,#68d391)" onclick="game.closeMenu()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-play"/></svg>Resume</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showLevelSelect())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-levels"/></svg>Levels</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.startDailyChallenge())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-calendar"/></svg>Daily Challenge</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.startEndlessMode())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-infinity"/></svg>Endless Mode</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showSkinPicker())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-skins"/></svg>Skins</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showLeaderboard())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"/></svg>Scores</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showSettings())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-sliders"/></svg>Settings</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.calibrate())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-target"/></svg>Calibrate tilt</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.saveGame(true))"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-save"/></svg>Save</button>
+        <button class="sheet-btn" id="skipButton" style="display:none" onclick="game.menuDo(()=>game.skipLevel())"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-skip"/></svg>Skip level</button>
         <button class="sheet-btn danger" onclick="game.menuDo(()=>game.resetProgress())">Reset progress</button>
     </div>
 </div>
 
 <div id="levelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #ffd700;border-radius:15px;padding:18px;width:92%;max-width:330px;max-height:88vh;display:flex;flex-direction:column;color:#fff;text-align:center">
-        <h3 style="color:#ffd700;margin-bottom:4px">🗺️ Levels</h3>
+        <h3 style="color:#ffd700;margin-bottom:4px">Levels</h3>
         <p id="levelStarTotal" style="font-size:11px;opacity:.7;margin-bottom:10px"></p>
         <div id="levelGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;overflow-y:auto;margin-bottom:12px;padding:2px"></div>
         <button onclick="game.closeLevelSelect()" style="background:#ffd700;color:#000;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-weight:bold">Close</button>
@@ -321,7 +335,7 @@
 
 <div id="leaderboardModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #ffd700;border-radius:15px;padding:20px;width:90%;max-width:300px;color:#fff;text-align:center">
-        <h3 style="color:#ffd700;margin-bottom:15px">🏆 High Scores</h3>
+        <h3 style="color:#ffd700;margin-bottom:15px">High Scores</h3>
         <div id="leaderboardList" style="margin-bottom:20px;font-size:13px;line-height:2"></div>
         <button onclick="game.closeLeaderboard()" style="background:#ffd700;color:#000;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-weight:bold">Close</button>
     </div>
@@ -343,8 +357,8 @@
 
 <div id="skinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:20px;width:90%;max-width:300px;color:#fff;text-align:center">
-        <h3 style="color:#63b3ed;margin-bottom:5px">🎨 Ball Skins</h3>
-        <p style="font-size:11px;opacity:.6;margin-bottom:15px">Unlock skins by earning achievements</p>
+        <h3 style="color:#63b3ed;margin-bottom:5px">Ball Skins</h3>
+        <p style="font-size:11px;opacity:.6;margin-bottom:15px">Unlock skins by beating levels</p>
         <div id="skinGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px"></div>
         <button onclick="game.closeSkinPicker()" style="background:#63b3ed;color:#000;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-weight:bold">Close</button>
     </div>
@@ -352,9 +366,10 @@
 
 <div id="dailyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #68d391;border-radius:15px;padding:22px;width:90%;max-width:300px;color:#fff;text-align:center">
-        <h3 style="color:#68d391;margin-bottom:5px">📅 Daily Challenge</h3>
+        <h3 style="color:#68d391;margin-bottom:5px">Daily Challenge</h3>
         <p style="font-size:12px;opacity:.7;margin-bottom:4px">Same level layout for everyone today</p>
         <p id="dailyDateLabel" style="font-size:11px;color:#68d391;margin-bottom:15px"></p>
+        <p id="dailyStreak" style="font-size:12px;color:#fbd38d;margin-bottom:8px"></p>
         <div id="dailyBestScore" style="font-size:13px;margin-bottom:15px;opacity:.8"></div>
         <div style="display:flex;gap:10px;justify-content:center">
             <button onclick="game.confirmDailyChallenge()" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Play!</button>
@@ -410,6 +425,24 @@
 </div>
 
 <script>
+
+const FEATURE_INFO = {
+    moving:     ['MOVING BLOCKS', 'Some blocks glide back and forth'],
+    mine:       ['MINES', 'Red mines cost a life. Steer clear'],
+    bumper:     ['BUMPERS', 'Round bumpers bounce you away'],
+    pu_shield:  ['SHIELD', 'Grab it to block your next hit'],
+    pu_freeze:  ['TIME FREEZE', 'Grab it to pause the timer for 5 seconds'],
+    pu_slow:    ['SLOW-MO', 'Grab it to slow the obstacles down'],
+    spinner:    ['SPINNERS', 'Spinning arms sweep across the board'],
+    laser:      ['LASERS', 'Sweeping beams cost a life'],
+    maze:       ['BARRIERS', 'Glowing walls block the direct route'],
+    bouncy:     ['BOUNCY LEVEL', 'Everything bounces harder'],
+    orbit:      ['ORBITS', 'Blocks circle around the funnel'],
+    drift:      ['MOVING TARGET', 'The funnel drifts around the board'],
+    chaos:      ['CHAOS', 'Faster, wilder obstacles'],
+};
+const ICONS = {"play": {"d": "M7 4.5v15l12-7.5z", "fill": true}, "pause": {"d": "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z", "fill": true}, "menu": {"d": "M4 7h16M4 12h16M4 17h16", "fill": false}, "levels": {"d": "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z", "fill": false}, "calendar": {"d": "M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM4 10.5h16M8 3.5V7M16 3.5V7", "fill": false}, "infinity": {"d": "M12 12c-2-2.7-3.6-4-5.5-4a4 4 0 0 0 0 8c1.9 0 3.5-1.3 5.5-4zm0 0c2 2.7 3.6 4 5.5 4a4 4 0 0 0 0-8c-1.9 0-3.5 1.3-5.5 4z", "fill": false}, "skins": {"d": "M12 3.5c3.5 4.2 6 7.3 6 10.2a6 6 0 0 1-12 0c0-2.9 2.5-6 6-10.2z", "fill": false}, "trophy": {"d": "M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4", "fill": false}, "sliders": {"d": "M4 7h9M17 7h3M4 17h3M11 17h9M15 4.5v5M9 14.5v5", "fill": false}, "target": {"d": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 11.2a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6z", "fill": false}, "save": {"d": "M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6", "fill": false}, "skip": {"d": "M5 5l9 7-9 7zM18 5v14", "fill": false}, "heart": {"d": "M12 20.5s-7.5-4.6-7.5-10.4A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z", "fill": true}, "heart-off": {"d": "M12 20.5s-7.5-4.6-7.5-10.4A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z", "fill": false}, "lock": {"d": "M7 11h10v9H7zM9 11V8a3 3 0 0 1 6 0v3", "fill": false}, "shield": {"d": "M12 3l7 3v5.5c0 4.4-3 7.8-7 9.5-4-1.7-7-5.1-7-9.5V6z", "fill": false}, "clock": {"d": "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4.5l3 1.5", "fill": false}, "hourglass": {"d": "M7 4h10M7 20h10M8 4c0 4 4 5 4 8s-4 4-4 8M16 4c0 4-4 5-4 8s4 4 4 8", "fill": false}, "mine": {"d": "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1", "fill": false}, "star": {"d": "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8z", "fill": true}, "bolt": {"d": "M13 3L5 13.5h6L10 21l8-10.5h-6z", "fill": true}, "flame": {"d": "M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .3 1.5 1 2 2 2 0-3-1-5 1-8z", "fill": false}, "check": {"d": "M5 12.5l4.5 4.5L19 7.5", "fill": false}, "assist": {"d": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v8M8 12h8", "fill": false}, "phone": {"d": "M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2", "fill": false}};
+const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 
 class TiltBallGame {
     constructor() {
@@ -519,6 +552,10 @@ class TiltBallGame {
         this.failCounts = {};
         this.timeLimit = 30;
         this.maxLevel = 1;
+        this.levelTicks = 0;
+        this.levelNewFeatures = [];
+        try { this.bestTimes = JSON.parse(localStorage.getItem('tiltSphereTimes') || '{}'); } catch(e) { this.bestTimes = {}; }
+        try { this.seen = JSON.parse(localStorage.getItem('tiltSphereSeen') || '{}'); } catch(e) { this.seen = {}; }
         this._rawBeta = 0; this._rawGamma = 0; this._autoCalib = false;
         this._musicTimer = null; this._musicStep = 0;
         try { this.stars = JSON.parse(localStorage.getItem('tiltSphereStars') || '{}'); } catch(e) { this.stars = {}; }
@@ -548,6 +585,9 @@ class TiltBallGame {
         document.getElementById('playButton').textContent = progress ? `CONTINUE · LEVEL ${this.level}` : 'PLAY';
         const total = Object.values(this.stars).reduce((a, b) => a + b, 0);
         document.getElementById('titleStats').textContent = `Best ${this.bestScore.toLocaleString()}  ·  ★ ${total}  ·  Level ${this.maxLevel} reached`;
+        const today = this.getDailyDateString(), streak = this.getStreak();
+        let todays = null; try { todays = JSON.parse(localStorage.getItem('tiltSphereDailyScores') || '{}')[today]; } catch(e) {}
+        document.getElementById('dailyStatus').textContent = (todays ? `best today ${todays.score}` : 'play today') + (streak > 0 ? `  ·  ${streak} day streak` : '');
         document.getElementById('titleScreen').style.display = 'flex';
         this._titleOn = true; this._titleT0 = performance.now();
         if (!this._titleRaf) this._titleLoop();
@@ -600,15 +640,38 @@ class TiltBallGame {
         x.beginPath(); x.arc(bx, by, 9 * sc, 0, Math.PI * 2); x.fill(); x.restore();
     }
 
+    getLevelFeatures() {
+        const f = new Set(), cfg = this.getCurrentConfig();
+        this.obstacles.forEach(o => {
+            if (o.type === 'circle') f.add('bumper'); else if (o.type === 'spinner') f.add('spinner');
+            else if (o.type === 'laser') f.add('laser'); else if (o.type === 'mine') f.add('mine');
+            else if (!o.isMoving && (o.w >= 80 || o.h >= 80)) f.add('maze');
+            if (o.isMoving && o.type === 'rect') f.add('moving');
+        });
+        this.powerups.forEach(p => f.add('pu_' + p.type));
+        if (this.funnelDrift) f.add('drift');
+        if (cfg.specialMechanic === 'bouncy') f.add('bouncy');
+        if (cfg.specialMechanic === 'spiral') f.add('orbit');
+        if (cfg.specialMechanic === 'chaos' || cfg.specialMechanic === 'chaos_mode') f.add('chaos');
+        return ['moving','mine','bumper','pu_shield','pu_freeze','pu_slow','spinner','laser','maze','bouncy','orbit','drift','chaos'].filter(k => f.has(k));
+    }
+
+    beginIntro() {
+        this.levelIntroLevel = this.level; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
+        const unseen = this.getLevelFeatures().filter(k => !this.seen[k]).slice(0, 2);
+        unseen.forEach(k => { this.seen[k] = true; });
+        this.levelNewFeatures = unseen;
+        if (unseen.length) { try { localStorage.setItem('tiltSphereSeen', JSON.stringify(this.seen)); } catch(e) {} }
+    }
+
     modeLevelKey() { return `${this.gameMode}:${this.gameMode === 'endless' ? this.endlessLevel : this.level}`; }
     assistScale() { return (this.settings.assist && (this.failCounts[this.modeLevelKey()] || 0) >= 2) ? 0.75 : 1; }
-    hazardLives() { return ['expert','legendary','master','grandmaster','ultimate'].includes(this.getCurrentConfig().difficulty); }
 
     renderHearts() {
         const total = Math.max(3, this.lives);
         let h = '';
-        for (let i = 0; i < total; i++) h += i < this.lives ? '❤️' : '🖤';
-        document.getElementById('livesHearts').textContent = h;
+        for (let i = 0; i < total; i++) h += i < this.lives ? ic('heart', 'heart-on') : ic('heart-off', 'heart-off');
+        document.getElementById('livesHearts').innerHTML = h;
         document.getElementById('livesCount').textContent  = this.lives;
     }
 
@@ -621,7 +684,7 @@ class TiltBallGame {
             cb();
             if (live && this.gameRunning) this.gamePaused = false;
             f.style.opacity = 0;
-        }, 260);
+        }, 170);
     }
 
     openMenu() {
@@ -640,7 +703,7 @@ class TiltBallGame {
     calibrate(silent=false) {
         this.tiltOffsetBeta  = this._rawBeta;
         this.tiltOffsetGamma = this._rawGamma;
-        if (!silent) this.showNotification('🎯 Calibrated', 'Your current phone angle is now "flat"', 2200);
+        if (!silent) this.showNotification(ic('target') + ' Calibrated', 'Your current phone angle is now "flat"', 2200);
     }
 
     recordStars(level, stars) {
@@ -656,7 +719,7 @@ class TiltBallGame {
         for (let n = 1; n <= this.levelConfigs.length; n++) {
             const unlocked = n <= this.maxLevel;
             const st = this.stars[n] || 0; total += st;
-            html += `<div class="level-cell ${unlocked ? '' : 'locked'}" style="border-color:${tierCol(n)}" ${unlocked ? `onclick="game.selectLevel(${n})"` : ''}>${unlocked ? n : '🔒'}<small>${unlocked ? ('<span>' + '★'.repeat(st) + '</span><span style="color:rgba(255,255,255,.2)">' + '★'.repeat(3 - st) + '</span>') : ''}</small></div>`;
+            html += `<div class="level-cell ${unlocked ? '' : 'locked'}" style="border-color:${tierCol(n)}" ${unlocked ? `onclick="game.selectLevel(${n})"` : ''}>${unlocked ? n : ic('lock')}<small>${unlocked ? ('<span>' + '★'.repeat(st) + '</span><span style="color:rgba(255,255,255,.2)">' + '★'.repeat(3 - st) + '</span>') : ''}</small></div>`;
         }
         grid.innerHTML = html;
         document.getElementById('levelStarTotal').textContent = `★ ${total} / ${this.levelConfigs.length * 3} stars  ·  unlocked ${this.maxLevel} / ${this.levelConfigs.length}`;
@@ -694,9 +757,9 @@ class TiltBallGame {
 
     collectPowerup(p) {
         const info = {
-            freeze: { label: '⏱ TIMER FROZEN', color: '#63b3ed' },
-            shield: { label: '🛡 SHIELD',       color: '#68d391' },
-            slow:   { label: '🐢 SLOW-MO',      color: '#f6ad55' }
+            freeze: { label: 'TIMER FROZEN', color: '#63b3ed' },
+            shield: { label: 'SHIELD',       color: '#68d391' },
+            slow:   { label: 'SLOW-MO',      color: '#f6ad55' }
         }[p.type];
         if (p.type === 'freeze') this.timerFreeze = 300;
         if (p.type === 'shield') this.shieldActive = true;
@@ -727,8 +790,19 @@ class TiltBallGame {
         if (step % 4 === 0) this._musicTone((step % 8 === 0) ? 110 : 146.8, 'sine', 0.05, 1.6);
     }
 
+    drawIcon(ctx, name, x, y, size, color, lw = 2) {
+        if (typeof Path2D === 'undefined') return;
+        const def = ICONS[name]; if (!def) return;
+        this._p2d = this._p2d || {};
+        const path = this._p2d[name] || (this._p2d[name] = new Path2D(def.d));
+        ctx.save(); ctx.translate(x - size/2, y - size/2); ctx.scale(size/24, size/24);
+        ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        if (def.fill) { ctx.fillStyle = color; ctx.fill(path); } else { ctx.strokeStyle = color; ctx.stroke(path); }
+        ctx.restore();
+    }
+
     drawPowerups(ctx) {
-        const cols = { freeze:'#63b3ed', shield:'#68d391', slow:'#f6ad55' }, icons = { freeze:'⏱', shield:'🛡', slow:'🐢' };
+        const cols = { freeze:'#63b3ed', shield:'#68d391', slow:'#f6ad55' }, icons = { freeze:'clock', shield:'shield', slow:'hourglass' };
         this.powerups.forEach(p => {
             const col = cols[p.type];
             ctx.save();
@@ -736,24 +810,27 @@ class TiltBallGame {
             const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 17);
             g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.globalAlpha = 0.55; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(15,20,35,.9)'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(15,20,35,.9)'; ctx.beginPath(); ctx.arc(0, 0, 10.5, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
-            ctx.font = '11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
-            ctx.fillText(icons[p.type], 0, 1);
+            this.drawIcon(ctx, icons[p.type], 0, 0, 12, '#fff', 2.2);
             ctx.restore();
         });
     }
 
     drawEffects(ctx) {
         const items = [];
-        if (this.shieldActive)     items.push('🛡 shield');
-        if (this.freezeTicks > 0)  items.push('❄ ' + Math.ceil(this.freezeTicks / 60) + 's');
-        if (this.slowTicks > 0)    items.push('🐢 ' + Math.ceil(this.slowTicks / 60) + 's');
-        if (this.timerFreeze > 0)  items.push('⏱ ' + Math.ceil(this.timerFreeze / 60) + 's');
-        if (this.assistScale() < 1) items.push('🤝 assist');
+        if (this.shieldActive)      items.push(['shield', 'shield', '#68d391']);
+        if (this.freezeTicks > 0)   items.push(['clock', Math.ceil(this.freezeTicks / 60) + 's', '#63b3ed']);
+        if (this.slowTicks > 0)     items.push(['hourglass', Math.ceil(this.slowTicks / 60) + 's', '#f6ad55']);
+        if (this.timerFreeze > 0)   items.push(['clock', Math.ceil(this.timerFreeze / 60) + 's', '#63b3ed']);
+        if (this.assistScale() < 1) items.push(['assist', 'assist', '#cbd5e0']);
         if (!items.length) return;
-        ctx.save(); ctx.font = 'bold 11px Arial'; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'left';
-        items.forEach((t, i) => ctx.fillText(t, 8, 16 + i * 14));
+        ctx.save(); ctx.font = 'bold 11px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        items.forEach((it, i) => {
+            const y = 16 + i * 17;
+            this.drawIcon(ctx, it[0], 15, y, 13, it[2], 2.2);
+            ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText(it[1], 26, y + 1);
+        });
         ctx.restore();
     }
 
@@ -763,6 +840,7 @@ class TiltBallGame {
             const cx = o.x + o.w/2, cy = o.y + o.h/2;
             ctx.setLineDash(o.isMoving ? [5, 4] : []); ctx.lineWidth = 2.5; ctx.beginPath();
             if (o.type === 'circle') ctx.arc(cx, cy, o.w/2 + 2, 0, Math.PI*2);
+            else if (o.type === 'mine') { ctx.arc(cx, cy, o.w/2 + 4, 0, Math.PI*2); [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy]) => { ctx.moveTo(cx + dx*(o.w/2+4), cy + dy*(o.w/2+4)); ctx.lineTo(cx + dx*(o.w/2+11), cy + dy*(o.w/2+11)); }); }
             else if (o.type === 'laser') {
                 const hl = o.laserLength / 2;
                 ctx.moveTo(cx + Math.cos(o.laserAngle)*hl, cy + Math.sin(o.laserAngle)*hl);
@@ -839,6 +917,13 @@ class TiltBallGame {
 
         for (let i = 0; i < cfg.obstacles;       i++) this.spawnObstacle(false, cfg);
         for (let i = 0; i < cfg.movingObstacles; i++) this.spawnObstacle(true,  cfg);
+        const lvlN = this.gameMode === 'endless' ? this.endlessLevel + 5 : this.level;
+        const mineCount = lvlN < 6 ? 0 : Math.min(1 + Math.floor((lvlN - 6) / 12), 6);
+        for (let i = 0; i < mineCount; i++) {
+            this.spawnObstacle(false, cfg);
+            const m = this.obstacles[this.obstacles.length - 1];
+            m.type = 'mine'; m.w = m.h = 24; m.isMoving = false;
+        }
         if (cfg.specialMechanic === 'maze') this.addMazeWalls(fs);
         this._bounceMul = cfg.specialMechanic === 'bouncy' ? 1.4 : 1;
         this.powerups = []; this.freezeTicks = 0; this.slowTicks = 0; this.timerFreeze = 0; this.invuln = 0; this.mvScale = 1;
@@ -859,9 +944,7 @@ class TiltBallGame {
         this.levelHitCount = 0;
 
         if (this.gameRunning) {
-            this.levelIntroLevel    = this.level;
-            this.levelIntroProgress = 0.001;
-            this.levelIntroActive   = true;
+            this.beginIntro();
             this.startTimer();
         }
 
@@ -1146,9 +1229,7 @@ class TiltBallGame {
         const gc = document.getElementById('gameContainer'); gc.classList.remove('boardIn'); void gc.offsetWidth; gc.classList.add('boardIn');
         this.joystickActive = !this.gyroAvailable;
         this.startTimer();
-        this.levelIntroLevel    = this.level;
-        this.levelIntroProgress = 0.001;
-        this.levelIntroActive   = true;
+        this.beginIntro();
         this.tutorialActive     = (this.level === 1);
         this.tutorialProgress   = 0;
     }
@@ -1179,7 +1260,7 @@ class TiltBallGame {
         if (!this.gameRunning || this.gamePaused || this.levelCompleting) return;
 
         if (this.levelIntroActive) {
-            this.levelIntroProgress += 1/60;
+            this.levelIntroProgress += 1 / (this.levelNewFeatures.length ? 130 : 60);
             if (this.levelIntroProgress >= 1) {
                 this.levelIntroActive   = false;
                 this.levelIntroProgress = 0;
@@ -1189,6 +1270,7 @@ class TiltBallGame {
 
         this.time += 0.016;
         this.tick++;
+        if (this.timerFreeze <= 0) this.levelTicks++;
         if (this.invuln > 0)      this.invuln--;
         if (this.freezeTicks > 0) this.freezeTicks--;
         if (this.slowTicks > 0)   this.slowTicks--;
@@ -1245,7 +1327,7 @@ class TiltBallGame {
             const br  = this.ballSize / 2;
             let hit   = false;
 
-            if (o.type === 'circle') {
+            if (o.type === 'circle' || o.type === 'mine') {
                 const cx = o.x + o.w/2, cy = o.y + o.h/2, cr = o.w/2;
                 const dist = Math.hypot(bcx-cx, bcy-cy);
                 if (dist < br + cr) {
@@ -1313,13 +1395,16 @@ class TiltBallGame {
                 this.soundObstacleHit();
                 if (this.settings.haptic && navigator.vibrate) navigator.vibrate([30,10,30]);
                 this.squashAmt = 0.32;
-                const lethal = o.type === 'laser' && this.hazardLives();
+                const lethal = o.type === 'laser' || o.type === 'mine';
                 if (this.shieldActive && (!lethal || this.invuln <= 0)) {
                     this.shieldActive = false; this.invuln = 45;
-                    this.scorePopups.push({ x: bcx, y: bcy - 14, text: '🛡 BLOCKED', life: 45, maxLife: 45, color: '#68d391' });
+                    this.scorePopups.push({ x: bcx, y: bcy - 14, text: 'BLOCKED', life: 45, maxLife: 45, color: '#68d391' });
                     this.spawnParticles(bcx, bcy, '#63b3ed', 14);
                 } else if (lethal) {
-                    if (this.invuln <= 0) { this.invuln = 90; this.loseLife('Zapped by a laser!'); }
+                    if (this.invuln <= 0) {
+                        this.invuln = 90; this.levelHitCount++; this.levelAttempts++; this.combo = 0; this.checkSkipLevelAvailability();
+                        this.loseLife(o.type === 'mine' ? 'Hit a mine' : 'Zapped by a laser');
+                    }
                 } else {
                     this.levelAttempts++;
                     this.levelHitCount++;
@@ -1503,9 +1588,23 @@ class TiltBallGame {
         ctx.font = 'bold 13px Arial'; ctx.fillStyle = col; ctx.shadowBlur = 8;
         ctx.fillText(diff, 0, 20);
         const ml = this.mechLabel(cfg);
-        if (ml) { ctx.font = 'bold 11px Arial'; ctx.fillText(ml, 0, 38); }
-        if (this.hazardLives() && (this.gameMode !== 'normal' || this.level >= 41)) { ctx.font = 'bold 10px Arial'; ctx.fillStyle = '#fc8181'; ctx.fillText('⚡ LASERS COST A LIFE', 0, ml ? 56 : 40); }
-
+        let ly = 38;
+        if (ml) { ctx.font = 'bold 11px Arial'; ctx.fillText(ml, 0, ly); ly += 17; }
+        if (this.obstacles.some(o => o.type === 'laser' || o.type === 'mine')) {
+            ctx.font = 'bold 10px Arial'; ctx.fillStyle = '#fc8181'; ctx.shadowBlur = 0;
+            ctx.fillText('HAZARDS COST A LIFE', 6, ly); this.drawIcon(ctx, 'bolt', -58, ly, 11, '#fc8181'); ly += 17;
+        }
+        ctx.shadowBlur = 0; ctx.font = 'bold 10px Arial'; ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.fillText(`3 STARS: NO HITS + UNDER ${Math.floor(this.baseTimeLimit() * 0.5)}s`, 0, ly + 4);
+        const bt = this.gameMode === 'normal' ? this.bestTimes[this.levelIntroLevel] : undefined;
+        if (bt !== undefined) { ctx.fillStyle = '#ffd700'; ctx.fillText(`YOUR BEST ${bt.toFixed(1)}s`, 0, ly + 20); }
+        if (this.levelNewFeatures.length) {
+            const [n1, d1] = FEATURE_INFO[this.levelNewFeatures[0]];
+            ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12; ctx.font = 'bold 12px Arial';
+            ctx.fillText('NEW: ' + n1, 0, -108);
+            ctx.shadowBlur = 0; ctx.font = '11px Arial'; ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillText(d1, 0, -91);
+            if (this.levelNewFeatures[1]) { const [n2, d2] = FEATURE_INFO[this.levelNewFeatures[1]]; ctx.fillStyle = '#ffd700'; ctx.font = 'bold 10px Arial'; ctx.fillText('ALSO NEW: ' + n2, 0, -72); }
+        }
         ctx.shadowBlur = 0; ctx.strokeStyle = col; ctx.globalAlpha = alpha * 0.6; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(-80, 0); ctx.lineTo(-28, 0); ctx.stroke();
         ctx.beginPath(); ctx.moveTo( 28, 0); ctx.lineTo( 80, 0); ctx.stroke();
@@ -1616,6 +1715,21 @@ class TiltBallGame {
             const edge = moving ? '#b794f4' : th.accent;
             const edgeRgb = moving ? '183,148,244' : th.rgb;
             ctx.save();
+
+            if (o.type === 'mine') {
+                const r = o.w/2, pulse = 0.5 + 0.5 * Math.sin(this.time * 5 + o.phase);
+                const halo = ctx.createRadialGradient(cx, cy, r*.5, cx, cy, r*2.3);
+                halo.addColorStop(0, `rgba(245,101,101,${0.25 + pulse * 0.2})`); halo.addColorStop(1, 'rgba(245,101,101,0)');
+                ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(cx, cy, r*2.3, 0, Math.PI*2); ctx.fill();
+                ctx.translate(cx, cy); ctx.rotate(this.time * 0.6 + o.phase);
+                ctx.fillStyle = '#f56565';
+                for (let k = 0; k < 8; k++) { ctx.rotate(Math.PI / 4); ctx.beginPath(); ctx.moveTo(r*0.85, -3.2); ctx.lineTo(r*1.4, 0); ctx.lineTo(r*0.85, 3.2); ctx.closePath(); ctx.fill(); }
+                ctx.fillStyle = '#1b1015'; ctx.shadowColor = '#f56565'; ctx.shadowBlur = 10; ctx.strokeStyle = '#f56565'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, r*0.9, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.shadowBlur = 0; ctx.fillStyle = `rgba(255,120,120,${0.5 + pulse * 0.5})`;
+                ctx.beginPath(); ctx.arc(0, 0, r*0.32, 0, Math.PI*2); ctx.fill();
+                ctx.restore(); return;
+            }
 
             if (o.type === 'circle') {
                 const r = o.w/2;
@@ -1853,13 +1967,17 @@ class TiltBallGame {
         const mult  = this.levelHitCount === 0 ? (this.combo++, this.getComboMultiplier()) : (this.combo = 0, 1);
         const bonus = Math.round(this.level * 100 * mult);
         this.score += bonus;
-        const stars = 1 + (this.levelHitCount === 0 ? 1 : 0) + (this.timeLeft >= this.timeLimit * 0.5 ? 1 : 0);
+        const elapsed = this.levelTicks / 60;
+        const par = Math.floor(this.baseTimeLimit() * 0.5);
+        const stars = 1 + (this.levelHitCount === 0 ? 1 : 0) + (elapsed <= par ? 1 : 0);
         this.levelHitCount = 0;
-        if (this.gameMode === 'normal') this.recordStars(this.level, stars);
+        let newBest = false;
+        if (this.gameMode === 'normal') { this.recordStars(this.level, stars); newBest = this.recordTime(this.level, elapsed); }
 
         const popColor = mult > 1 ? '#ffd700' : '#68d391';
         this.scorePopups.push({ x: fcx, y: fcy - 20, text: `+${bonus}`, life: 60, maxLife: 60, color: popColor });
-        this.scorePopups.push({ x: fcx, y: fcy + 30, kind: 'stars', count: stars, life: 75, maxLife: 75, color: '#ffd700' });
+        this.scorePopups.push({ x: fcx, y: Math.min(fcy + 30, this.H - 40), kind: 'stars', count: stars, life: 75, maxLife: 75, color: '#ffd700' });
+        this.scorePopups.push({ x: fcx, y: Math.min(fcy + 54, this.H - 14), text: (newBest ? 'NEW BEST ' : '') + elapsed.toFixed(1) + 's', life: 80, maxLife: 80, color: newBest ? '#ffd700' : '#cbd5e0' });
         for (let i = 0; i < stars; i++) setTimeout(() => this._playTone(520 + i * 160, 'sine', 0.16, 0.16, 0.005, 700 + i * 160), 250 + i * 130);
         this.showComboPopup(mult, fcx, fcy);
 
@@ -1918,7 +2036,7 @@ class TiltBallGame {
     endGame() {
         this.gameRunning = false; this.levelCompleting = false;
         this.stopTimer();
-        this.ask('🎉 Congratulations!', `You completed all ${this.levelConfigs.length} levels! Final score: ${this.score}. Best: ${this.bestScore}. You are a TiltSphere Master!`, null, 'Nice!');
+        this.ask('Congratulations!', `You completed all ${this.levelConfigs.length} levels! Final score: ${this.score}. Best: ${this.bestScore}. You are a TiltSphere Master!`, null, 'Nice!');
         this.level = 1; this.score = 0;
         document.body.classList.remove('playing'); this.startButton.style.display = 'block'; this.startButton.textContent = 'PLAY AGAIN'; setTimeout(() => this.showTitle(), 0); document.getElementById('levelsButton').style.display = '';
         document.getElementById('menuButtons').style.display = 'none';
@@ -1977,8 +2095,8 @@ class TiltBallGame {
     }
 
     doReset() {
-        try { ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings','tiltSphereScores','tiltSphereStars'].forEach(k => localStorage.removeItem(k)); } catch(e) {}
-        this.level=1; this.maxLevel=1; this.stars={}; this.score=0; this.bestScore=0; this.achievements=[]; this.lives=3; this.combo=0;
+        try { ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings','tiltSphereScores','tiltSphereStars','tiltSphereTimes','tiltSphereSeen','tiltSphereStreak'].forEach(k => localStorage.removeItem(k)); } catch(e) {}
+        this.level=1; this.maxLevel=1; this.stars={}; this.bestTimes={}; this.seen={}; this.score=0; this.bestScore=0; this.achievements=[]; this.lives=3; this.combo=0;
         this.levelAttempts=0; this.gameRunning=false; this.levelCompleting=false;
         this.stopTimer();
         this.settings={ sound:true,haptic:true,trail:true,sensitivity:50,autoPause:true, music:true, colourblind:false, assist:true };
@@ -2027,42 +2145,45 @@ class TiltBallGame {
             try { localStorage.setItem('tiltSphereAchievements', JSON.stringify(this.achievements)); } catch(e) {}
             this.showAchievementNotification(n[0]);
             n.slice(1).forEach((a,i) => setTimeout(()=>this.showAchievementNotification(a),(i+1)*5000));
+            this.getSkinDefs().forEach(sk => { if (sk.unlockAchievement && n.includes(sk.unlockAchievement)) setTimeout(() => this.showNotification(ic('star') + ' New ball unlocked', `${sk.name} - pick it in Skins`, 3500), 4600); });
         }
     }
 
     getAchievementData(name) {
-        return ({
-            first_win:{title:'🎉 First Victory!',description:'Completed your first level!'},
-            level_10:{title:'🔟 Ten Levels Down!',description:'Reached level 10'},
-            level_25:{title:'🌟 Quarter Century!',description:'Reached level 25'},
-            level_50:{title:'⭐ Halfway There!',description:'Reached level 50'},
-            level_75:{title:'💫 Three Quarters!',description:'Reached level 75'},
-            level_100:{title:'💯 Century Mark!',description:'Reached level 100'},
-            level_125:{title:'🚀 Beyond Limits!',description:'Reached level 125'},
-            level_150:{title:'⚡ Lightning Fast!',description:'Reached level 150'},
-            level_175:{title:'🌈 Almost There!',description:'Reached level 175'},
-            level_200:{title:'🏆 Legendary Status!',description:'Reached level 200'},
-            level_225:{title:'👑 Royal Achievement!',description:'Reached level 225'},
-            level_250:{title:'🎯 Perfect Score!',description:'Completed all 250 levels!'},
-            tier_easy:{title:'🟢 Easy Tier Complete!',description:'Mastered the basics'},
-            tier_medium:{title:'🟡 Medium Tier Complete!',description:'Building skills'},
-            tier_hard:{title:'🟠 Hard Tier Complete!',description:'Getting challenging'},
-            tier_expert:{title:'🔴 Expert Tier Complete!',description:'Expert level achieved'},
-            tier_legendary:{title:'🟣 Legendary Tier Complete!',description:'Legendary skills'},
-            tier_master:{title:'⚫ Master Tier Complete!',description:'Master level reached'},
-            tier_grandmaster:{title:'🔵 Grandmaster!',description:'Grandmaster achieved'},
-            tier_ultimate:{title:'⚪ Ultimate Tier Complete!',description:'Ultimate mastery!'},
-            score_5k:{title:'💰 5K Points!',description:'Scored 5,000 points'},
-            score_10k:{title:'💎 10K Points!',description:'Scored 10,000 points'},
-            score_25k:{title:'🏅 25K Points!',description:'Scored 25,000 points'},
-            score_50k:{title:'🥈 50K Points!',description:'Scored 50,000 points'},
-            score_100k:{title:'🥇 100K Points!',description:'Scored 100,000 points'},
+        const d = ({
+            first_win:{title:'First Victory!',description:'Completed your first level!'},
+            level_10:{title:'Ten Levels Down!',description:'Reached level 10'},
+            level_25:{title:'Quarter Century!',description:'Reached level 25'},
+            level_50:{title:'Halfway There!',description:'Reached level 50'},
+            level_75:{title:'Three Quarters!',description:'Reached level 75'},
+            level_100:{title:'Century Mark!',description:'Reached level 100'},
+            level_125:{title:'Beyond Limits!',description:'Reached level 125'},
+            level_150:{title:'Lightning Fast!',description:'Reached level 150'},
+            level_175:{title:'Almost There!',description:'Reached level 175'},
+            level_200:{title:'Legendary Status!',description:'Reached level 200'},
+            level_225:{title:'Royal Achievement!',description:'Reached level 225'},
+            level_250:{title:'Perfect Score!',description:'Completed all 250 levels!'},
+            tier_easy:{title:'Easy Tier Complete!',description:'Mastered the basics'},
+            tier_medium:{title:'Medium Tier Complete!',description:'Building skills'},
+            tier_hard:{title:'Hard Tier Complete!',description:'Getting challenging'},
+            tier_expert:{title:'Expert Tier Complete!',description:'Expert level achieved'},
+            tier_legendary:{title:'Legendary Tier Complete!',description:'Legendary skills'},
+            tier_master:{title:'Master Tier Complete!',description:'Master level reached'},
+            tier_grandmaster:{title:'Grandmaster!',description:'Grandmaster achieved'},
+            tier_ultimate:{title:'Ultimate Tier Complete!',description:'Ultimate mastery!'},
+            score_5k:{title:'5K Points!',description:'Scored 5,000 points'},
+            score_10k:{title:'10K Points!',description:'Scored 10,000 points'},
+            score_25k:{title:'25K Points!',description:'Scored 25,000 points'},
+            score_50k:{title:'50K Points!',description:'Scored 50,000 points'},
+            score_100k:{title:'100K Points!',description:'Scored 100,000 points'},
         })[name];
+        if (d) d.icon = name === 'first_win' ? 'star' : name.startsWith('score') ? 'bolt' : name.startsWith('tier') ? 'shield' : 'trophy';
+        return d;
     }
 
     showAchievementNotification(name) {
         const d = this.getAchievementData(name); if (!d) return;
-        document.getElementById('achievementTitle').textContent       = d.title;
+        document.getElementById('achievementTitle').innerHTML         = ic(d.icon) + ' ' + d.title;
         document.getElementById('achievementDescription').textContent = d.description;
         const el = document.getElementById('achievementNotification');
         el.classList.add('show');
@@ -2116,11 +2237,25 @@ class TiltBallGame {
 
     closeSettings() { document.getElementById('settingsModal').style.display='none'; }
 
+    baseTimeLimit() {
+        const t = { easy:40, medium:35, hard:28, expert:22, legendary:18, master:16, grandmaster:15, ultimate:14 };
+        return t[this.getCurrentConfig().difficulty] || 30;
+    }
+
+    recordTime(level, t) {
+        const prev = this.bestTimes[level];
+        if (prev !== undefined && t >= prev - 0.05) return false;
+        this.bestTimes[level] = Math.round(t * 10) / 10;
+        try { localStorage.setItem('tiltSphereTimes', JSON.stringify(this.bestTimes)); } catch(e) {}
+        return prev !== undefined;
+    }
+
     startTimer() {
         this.stopTimer();
         const cfg = this.getCurrentConfig();
         const timeLimits = { easy:40, medium:35, hard:28, expert:22, legendary:18, master:16, grandmaster:15, ultimate:14 };
-        this.timeLimit = (timeLimits[cfg.difficulty] || 30) + (this.assistScale() < 1 ? 8 : 0);
+        this.levelTicks = 0;
+        this.timeLimit = this.baseTimeLimit() + (this.assistScale() < 1 ? 8 : 0);
         this.timeLeft  = this.timeLimit;
         this.updateTimerUI();
         this.timerRunning = true;
@@ -2128,7 +2263,7 @@ class TiltBallGame {
             if (!this.gameRunning || this.gamePaused || !this.timerRunning || this.timerFreeze > 0) return;
             this.timeLeft--;
             this.updateTimerUI();
-            if (this.timeLeft <= 0) { this.stopTimer(); this.loseLife("Time's up!"); }
+            if (this.timeLeft <= 0) { this.stopTimer(); this.timeUp(); }
         }, 1000);
     }
 
@@ -2147,6 +2282,17 @@ class TiltBallGame {
         }
     }
 
+    timeUp() {
+        this.combo = 0; this.levelHitCount = 0;
+        const fk = this.modeLevelKey(); this.failCounts[fk] = (this.failCounts[fk] || 0) + 1;
+        this.ballX = 165; this.ballY = 165; this.ballVelX = 0; this.ballVelY = 0; this.invuln = 30;
+        this.scorePopups.push({ x: 175, y: 120, text: 'TIME UP - TRY AGAIN', life: 70, maxLife: 70, color: '#f6ad55' });
+        this.spawnParticles(175, 175, '#f6ad55', 16);
+        if (this.settings.haptic && navigator.vibrate) navigator.vibrate([120, 60, 120]);
+        if (this.assistScale() < 1) this.showNotification(ic('assist') + ' Assist is on', 'Obstacles slowed and +8s on this level', 2600);
+        this.startTimer();
+    }
+
     loseLife(reason) {
         this.lives = Math.max(0, this.lives - 1);
         this.combo = 0;
@@ -2156,7 +2302,7 @@ class TiltBallGame {
         this.spawnParticles(this.ballX+10, this.ballY+10, '#f56565', 20);
         if (this.lives <= 0) { this.triggerGameOver(reason); }
         else {
-            this.showNotification(`💔 Life lost! — ${reason}`, `${this.lives} ${this.lives===1?'life':'lives'} remaining` + (this.assistScale() < 1 ? ' • Assist on: slower obstacles, +8s' : ''), 3000);
+            this.showNotification(`${ic('heart-off')} Life lost: ${reason}`, `${this.lives} ${this.lives===1?'life':'lives'} remaining` + (this.assistScale() < 1 ? ' • Assist on: slower obstacles, +8s' : ''), 2200);
             this.ballX = 165; this.ballY = 165; this.ballVelX = 0; this.ballVelY = 0;
             this.startTimer();
         }
@@ -2183,7 +2329,7 @@ class TiltBallGame {
             if (this.gameMode === 'endless') this.endlessLevel = 1;
             this.gameRunning = true;
             this.setupLevel(); this.updateUI(); this.startTimer();
-            this.levelIntroLevel = this.level; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
+            
             this.tutorialActive = (this.level === 1); this.tutorialProgress = 0;
         });
     }
@@ -2203,7 +2349,7 @@ class TiltBallGame {
         const list   = document.getElementById('leaderboardList');
         if (!scores.length) { list.innerHTML = '<div style="opacity:.6">No scores yet — play a game!</div>'; }
         else {
-            const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+            const medals = [0,1,2,3,4].map(i => `<span style="display:inline-block;width:20px;height:20px;line-height:20px;border-radius:50%;background:${['#ffd700','#cbd5e0','#dd8f4d','#4a5568','#4a5568'][i]};color:${i < 3 ? '#000' : '#fff'};font-size:11px;font-weight:800">${i+1}</span>`);
             list.innerHTML = scores.map((s,i) => `<div>${medals[i]} <b>${s.score.toLocaleString()}</b> pts &nbsp;·&nbsp; Lvl ${s.level} &nbsp;·&nbsp; <span style="opacity:.6">${s.date}</span></div>`).join('');
         }
         document.getElementById('leaderboardModal').style.display = 'flex';
@@ -2221,7 +2367,7 @@ class TiltBallGame {
 
     showComboPopup(multiplier, x, y) {
         if (multiplier <= 1) return;
-        const labels = { 1.5:'x1.5 COMBO!', 2:'x2 COMBO!', 3:'x3 HOT STREAK!', 5:'x5 ON FIRE! 🔥' };
+        const labels = { 1.5:'x1.5 COMBO!', 2:'x2 COMBO!', 3:'x3 HOT STREAK!', 5:'x5 ON FIRE!' };
         this.scorePopups.push({ x, y: y - 35, text: labels[multiplier] || `x${multiplier}`, life: 80, maxLife: 80, color: multiplier >= 3 ? '#ffd700' : '#4fd1c7' });
     }
 
@@ -2286,9 +2432,26 @@ class TiltBallGame {
         ctx.restore();
     }
 
-    getDailyDateString() {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    dateStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+    getDailyDateString() { return this.dateStr(new Date()); }
+
+    getStreak() {
+        try {
+            const st = JSON.parse(localStorage.getItem('tiltSphereStreak') || '{}');
+            if (!st.last) return 0;
+            return (st.last === this.getDailyDateString() || st.last === this.dateStr(new Date(Date.now() - 864e5))) ? (st.count || 0) : 0;
+        } catch(e) { return 0; }
+    }
+
+    bumpStreak() {
+        try {
+            const today = this.getDailyDateString();
+            const st = JSON.parse(localStorage.getItem('tiltSphereStreak') || '{}');
+            if (st.last === today) return;
+            st.count = (st.last === this.dateStr(new Date(Date.now() - 864e5))) ? (st.count || 0) + 1 : 1;
+            st.last = today;
+            localStorage.setItem('tiltSphereStreak', JSON.stringify(st));
+        } catch(e) {}
     }
 
     getDailySeed(dateStr) {
@@ -2298,15 +2461,16 @@ class TiltBallGame {
     }
 
     startDailyChallenge() {
-        if (!this.gameRunning) return;
         this.dailyDate  = this.getDailyDateString();
         this.dailySeed  = this.getDailySeed(this.dailyDate);
         const saved     = JSON.parse(localStorage.getItem('tiltSphereDailyScores') || '{}');
         const todayBest = saved[this.dailyDate];
+        const streak    = this.getStreak();
         document.getElementById('dailyDateLabel').textContent = this.dailyDate;
+        document.getElementById('dailyStreak').innerHTML = streak > 0 ? `${ic('flame')} ${streak} day streak${saved[this.dailyDate] ? '' : ' - play today to keep it'}` : 'Play today to start a streak';
         document.getElementById('dailyBestScore').textContent = todayBest
             ? `Your best today: ${todayBest.score} pts (level ${todayBest.level})`
-            : 'No score yet today — go for it!';
+            : 'No score yet today - go for it!';
         document.getElementById('dailyModal').style.display = 'flex';
     }
 
@@ -2314,14 +2478,15 @@ class TiltBallGame {
 
     confirmDailyChallenge() {
         this.closeDailyModal();
-        this.gameMode = 'daily'; this.level = 1; this.score = 0; this.lives = 3; this.combo = 0;
+        this.gameMode = 'daily'; this.level = 1; this.score = 0; this.lives = 3; this.combo = 0; this.failCounts = {};
         this._rng = this._seededRng(this.dailySeed);
-        this.setupLevel(); this.updateUI(); this.startTimer();
-        this.levelIntroLevel = 1; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
-        this.showNotification('📅 Daily Challenge!', `Seed: ${this.dailyDate}`, 2500);
+        this.setupLevel(); this.updateUI();
+        if (!this.gameRunning) { this.requestPermission(); return; }
+        this.showNotification(ic('calendar') + ' Daily Challenge', `Seed: ${this.dailyDate}`, 2500);
     }
 
     saveDailyScore() {
+        this.bumpStreak();
         try {
             const saved = JSON.parse(localStorage.getItem('tiltSphereDailyScores') || '{}');
             const prev  = saved[this.dailyDate];
@@ -2344,10 +2509,9 @@ class TiltBallGame {
 
     startEndlessMode() {
         if (!this.gameRunning) return;
-        this.gameMode = 'endless'; this.endlessLevel = 1; this.level = 1; this.score = 0; this.lives = 3; this.combo = 0;
-        this.setupLevel(); this.updateUI(); this.startTimer();
-        this.levelIntroLevel = 1; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
-        this.showNotification('♾️ Endless Mode!', 'How far can you go?', 2500);
+        this.gameMode = 'endless'; this.endlessLevel = 1; this.level = 1; this.score = 0; this.lives = 3; this.combo = 0; this.failCounts = {}; this._rng = null;
+        this.setupLevel(); this.updateUI();
+        this.showNotification(ic('infinity') + ' Endless Mode', 'How far can you go?', 2500);
     }
 
     getEndlessConfig() {
@@ -2373,11 +2537,11 @@ class TiltBallGame {
 
     getSkinDefs() {
         return [
-            { id:0, name:'Classic',  color:'#fc8181', unlockAchievement:null,            emoji:'🔴' },
-            { id:1, name:'Ocean',    color:'#63b3ed', unlockAchievement:'tier_easy',      emoji:'🔵' },
-            { id:2, name:'Forest',   color:'#68d391', unlockAchievement:'tier_hard',      emoji:'🟢' },
-            { id:3, name:'Gold',     color:'#ffd700', unlockAchievement:'tier_legendary', emoji:'🟡' },
-            { id:4, name:'Plasma',   color:'#b794f4', unlockAchievement:'tier_master',    emoji:'🟣' },
+            { id:0, name:'Classic', color:'#fc8181', unlockAchievement:null,             need:0   },
+            { id:1, name:'Ocean',   color:'#63b3ed', unlockAchievement:'tier_easy',      need:20  },
+            { id:2, name:'Forest',  color:'#68d391', unlockAchievement:'tier_hard',      need:60  },
+            { id:3, name:'Gold',    color:'#ffd700', unlockAchievement:'tier_legendary', need:100 },
+            { id:4, name:'Plasma',  color:'#b794f4', unlockAchievement:'tier_master',    need:150 },
         ];
     }
 
@@ -2387,10 +2551,14 @@ class TiltBallGame {
         grid.innerHTML = skins.map(s => {
             const unlocked = s.unlockAchievement === null || this.achievements.includes(s.unlockAchievement);
             const active   = this.activeSkin === s.id;
-            return `<div onclick="game.selectSkin(${s.id})" style="cursor:${unlocked?'pointer':'default'};padding:10px 6px;border-radius:10px;text-align:center;border:2px solid ${active?'#ffd700':'rgba(255,255,255,0.15)'};background:${active?'rgba(255,215,0,0.1)':'rgba(255,255,255,0.04)'};opacity:${unlocked?1:0.4};">
-                <div style="font-size:24px">${s.emoji}</div>
-                <div style="font-size:10px;margin-top:4px">${s.name}</div>
-                <div style="font-size:9px;opacity:.6">${unlocked?'✓ Unlocked':'Locked'}</div>
+            const done     = Math.min(Math.max(this.maxLevel - 1, 0), s.need);
+            const status   = unlocked
+                ? `<div style="font-size:9px;opacity:.7">${active ? 'Equipped' : 'Unlocked'}</div>`
+                : `<div style="font-size:9px;opacity:.8;margin-top:1px">Beat level ${s.need}</div><div style="height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:4px 6px 0"><div style="height:100%;width:${Math.round(done / s.need * 100)}%;border-radius:2px;background:${s.color}"></div></div><div style="font-size:8px;opacity:.6;margin-top:2px">${done} / ${s.need}</div>`;
+            return `<div onclick="game.selectSkin(${s.id})" style="cursor:${unlocked?'pointer':'default'};padding:10px 4px;border-radius:10px;text-align:center;border:2px solid ${active?'#ffd700':'rgba(255,255,255,0.15)'};background:${active?'rgba(255,215,0,0.1)':'rgba(255,255,255,0.04)'};">
+                <div style="width:30px;height:30px;margin:0 auto;border-radius:50%;opacity:${unlocked?1:0.45};background:radial-gradient(circle at 35% 30%, #fff 0%, ${s.color} 40%, #000 130%);box-shadow:0 0 10px ${unlocked?s.color:'transparent'};position:relative">${unlocked ? '' : `<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff">${ic('lock')}</span>`}</div>
+                <div style="font-size:11px;margin-top:5px;font-weight:700">${s.name}</div>
+                ${status}
             </div>`;
         }).join('');
         document.getElementById('skinModal').style.display = 'flex';
@@ -2401,7 +2569,7 @@ class TiltBallGame {
         const skin    = skins.find(s => s.id === id);
         if (!skin) return;
         const unlocked = skin.unlockAchievement === null || this.achievements.includes(skin.unlockAchievement);
-        if (!unlocked) { this.showNotification('🔒 Locked', `Earn the ${skin.unlockAchievement} achievement`, 2500); return; }
+        if (!unlocked) { this.showNotification(ic('lock') + ' Locked', `Beat level ${skin.need} to unlock the ${skin.name} ball`, 2500); return; }
         this.activeSkin = id;
         try { localStorage.setItem('tiltSphereSkin', id.toString()); } catch(e) {}
         this.showSkinPicker();
