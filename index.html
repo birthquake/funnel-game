@@ -548,6 +548,8 @@ class TiltBallGame {
 
         this.levelIntroProgress  = 0;
         this.levelIntroActive    = false;
+        this.levelIntroTotal     = 120;
+        this.levelIntroQuick     = false;
         this.levelIntroLevel     = 1;
 
         this.time = 0;
@@ -675,9 +677,22 @@ class TiltBallGame {
     beginIntro() {
         this.levelIntroLevel = this.level; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
         const unseen = this.getLevelFeatures().filter(k => !this.seen[k]).slice(0, 2);
+        // Retrying the same level gets a short reminder; first visits and new mechanics get time to read.
+        const key = this.modeLevelKey();
+        this.levelIntroQuick = (key === this._lastIntroKey) && unseen.length === 0;
+        this._lastIntroKey = key;
+        this.levelIntroTotal = this.levelIntroQuick ? 50 : (unseen.length ? 300 : 170);
         unseen.forEach(k => { this.seen[k] = true; });
         this.levelNewFeatures = unseen;
         if (unseen.length) { try { localStorage.setItem('tiltSphereSeen', JSON.stringify(this.seen)); } catch(e) {} }
+    }
+
+    skipIntro() {
+        // Tap to start: allowed once the player has had a moment to see the screen.
+        if (!this.levelIntroActive || this.levelIntroQuick) return;
+        const t = this.levelIntroProgress * this.levelIntroTotal;
+        if (t < 45) return;
+        this.levelIntroProgress = Math.max(this.levelIntroProgress, 1 - 14 / this.levelIntroTotal);
     }
 
     modeLevelKey() { return `${this.gameMode}:${this.gameMode === 'endless' ? this.endlessLevel : this.level}`; }
@@ -1081,7 +1096,9 @@ class TiltBallGame {
 
     setupJoystick() {
         const canvas = this.canvas;
+        canvas.addEventListener('click', () => this.skipIntro());
         canvas.addEventListener('touchstart', (e) => {
+            this.skipIntro();
             if (!this.joystickActive) return;
             for (const t of e.changedTouches) {
                 const rect = canvas.getBoundingClientRect();
@@ -1276,7 +1293,7 @@ class TiltBallGame {
         if (!this.gameRunning || this.gamePaused || this.levelCompleting) return;
 
         if (this.levelIntroActive) {
-            this.levelIntroProgress += 1 / (this.levelNewFeatures.length ? 130 : 60);
+            this.levelIntroProgress += 1 / (this.levelIntroTotal || 120);
             if (this.levelIntroProgress >= 1) {
                 this.levelIntroActive   = false;
                 this.levelIntroProgress = 0;
@@ -1574,57 +1591,84 @@ class TiltBallGame {
     }
 
     drawLevelIntro(ctx) {
-        const p = this.levelIntroProgress;
-        let alpha, scale;
-        if (p < 0.3)      { alpha = p / 0.3; scale = 0.4 + (p / 0.3) * 0.6 * this._bounceMul; }
-        else if (p < 0.7) { alpha = 1; scale = 1; }
-        else              { alpha = 1 - (p - 0.7) / 0.3; scale = 1 + (p - 0.7) * 0.5; }
+        const p = this.levelIntroProgress, total = this.levelIntroTotal || 120, T = p * total, fade = 14;
+        const alpha = Math.max(0, Math.min(1, T / fade, (total - T) / fade));
+        const quick = this.levelIntroQuick;
 
         const cfg  = this.getCurrentConfig();
         const diff = cfg.difficulty.toUpperCase();
         const diffColors = { EASY:'#68d391', MEDIUM:'#f6ad55', HARD:'#f56565', EXPERT:'#9f7aea', LEGENDARY:'#ffd700', MASTER:'#e53e3e', GRANDMASTER:'#63b3ed', ULTIMATE:'#ffd700' };
         const col = diffColors[diff] || '#63b3ed';
 
+        const wrap = (text, font, maxW) => {
+            ctx.font = font;
+            const words = text.split(' '), lines = []; let line = '';
+            for (const w of words) {
+                const test = line ? line + ' ' + w : w;
+                const m = ctx.measureText(test), width = (m && m.width) || test.length * 6.5;
+                if (width > maxW && line) { lines.push(line); line = w; } else line = test;
+            }
+            if (line) lines.push(line);
+            return lines;
+        };
+
+        // Build the rows first so the panel can be sized to fit.
+        const PW = 300, maxW = PW - 40, rows = [];
+        const add = (t, font, color, h, extra) => rows.push(Object.assign({ t, font, color, h }, extra || {}));
+        add('LEVEL', 'bold 13px Arial', col, 18);
+        add(String(this.levelIntroLevel), 'bold 58px Arial', '#ffffff', 62, { glow: true });
+        add(diff, 'bold 14px Arial', col, 20);
+        const ml = this.mechLabel(cfg);
+        if (ml) add(ml, 'bold 12px Arial', col, 18);
+        if (!quick) {
+            if (this.levelNewFeatures.length) {
+                rows.push({ gap: 8 });
+                const [n1, d1] = FEATURE_INFO[this.levelNewFeatures[0]];
+                add('NEW: ' + n1, 'bold 16px Arial', '#ffd700', 24);
+                wrap(d1, '13px Arial', maxW).forEach(l => add(l, '13px Arial', '#ffffff', 18));
+                if (this.levelNewFeatures[1]) add('ALSO NEW: ' + FEATURE_INFO[this.levelNewFeatures[1]][0], 'bold 13px Arial', '#ffd700', 26);
+            }
+            rows.push({ gap: 8 });
+            if (this.obstacles.some(o => o.type === 'laser' || o.type === 'mine')) add('Hazards cost a life', 'bold 13px Arial', '#fc8181', 20, { icon: 'bolt' });
+            add(`3 stars: no hits, finish under ${Math.floor(this.baseTimeLimit() * 0.5)}s`, '12px Arial', 'rgba(255,255,255,.9)', 18);
+            const bt = this.gameMode === 'normal' ? this.bestTimes[this.levelIntroLevel] : undefined;
+            if (bt !== undefined) add(`Your best: ${bt.toFixed(1)}s`, 'bold 12px Arial', '#ffd700', 18);
+        }
+        const hint = !quick && T > 45;
+        const sumH = () => rows.reduce((a, r) => a + (r.gap || r.h), 0) + 36 + (hint ? 20 : 0);
+        if (sumH() > this.H - 16) { const i = rows.findIndex(r => r.t === ml && ml); if (i > -1) rows.splice(i, 1); }
+        const PH = sumH(), px = -PW / 2, py = -PH / 2;
+
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.translate(this.W/2, this.H/2);
-        ctx.scale(scale, scale);
+        ctx.fillStyle = 'rgba(0,0,0,0.72)';
+        ctx.fillRect(0, 0, this.W, this.H);
+        ctx.translate(this.W / 2, this.H / 2);
+        const sc = 0.94 + 0.06 * Math.min(1, T / fade); ctx.scale(sc, sc);
 
-        ctx.fillStyle = `rgba(0,0,0,0.55)`;
-        ctx.fillRect(-this.W/2/scale, -this.H/2/scale, this.W/scale, this.H/scale);
+        // Solid panel so text never sits on top of the moving game.
+        const r = 16;
+        ctx.beginPath();
+        ctx.moveTo(px + r, py); ctx.lineTo(px + PW - r, py); ctx.arcTo(px + PW, py, px + PW, py + r, r);
+        ctx.lineTo(px + PW, py + PH - r); ctx.arcTo(px + PW, py + PH, px + PW - r, py + PH, r);
+        ctx.lineTo(px + r, py + PH); ctx.arcTo(px, py + PH, px, py + PH - r, r);
+        ctx.lineTo(px, py + r); ctx.arcTo(px, py, px + r, py, r); ctx.closePath();
+        ctx.fillStyle = 'rgba(10,14,32,0.96)'; ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = alpha * 0.8; ctx.stroke(); ctx.globalAlpha = alpha;
 
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.shadowColor = col; ctx.shadowBlur = 30;
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 64px Arial';
-        ctx.fillText(`${this.levelIntroLevel}`, 0, -18);
-
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = col; ctx.shadowBlur = 12;
-        ctx.fillText('LEVEL', 0, -52);
-
-        ctx.font = 'bold 13px Arial'; ctx.fillStyle = col; ctx.shadowBlur = 8;
-        ctx.fillText(diff, 0, 20);
-        const ml = this.mechLabel(cfg);
-        let ly = 38;
-        if (ml) { ctx.font = 'bold 11px Arial'; ctx.fillText(ml, 0, ly); ly += 17; }
-        if (this.obstacles.some(o => o.type === 'laser' || o.type === 'mine')) {
-            ctx.font = 'bold 10px Arial'; ctx.fillStyle = '#fc8181'; ctx.shadowBlur = 0;
-            ctx.fillText('HAZARDS COST A LIFE', 6, ly); this.drawIcon(ctx, 'bolt', -58, ly, 11, '#fc8181'); ly += 17;
+        let y = py + 18;
+        for (const row of rows) {
+            if (row.gap) { y += row.gap; continue; }
+            const cy = y + row.h / 2;
+            ctx.font = row.font; ctx.fillStyle = row.color;
+            ctx.shadowColor = col; ctx.shadowBlur = row.glow ? 24 : 0;
+            if (row.icon) { const m = ctx.measureText(row.t), w = (m && m.width) || 110; ctx.fillText(row.t, 8, cy); this.drawIcon(ctx, row.icon, 8 - w / 2 - 10, cy, 12, row.color); }
+            else ctx.fillText(row.t, 0, cy);
+            y += row.h;
         }
-        ctx.shadowBlur = 0; ctx.font = 'bold 10px Arial'; ctx.fillStyle = 'rgba(255,255,255,.85)';
-        ctx.fillText(`3 STARS: NO HITS + UNDER ${Math.floor(this.baseTimeLimit() * 0.5)}s`, 0, ly + 4);
-        const bt = this.gameMode === 'normal' ? this.bestTimes[this.levelIntroLevel] : undefined;
-        if (bt !== undefined) { ctx.fillStyle = '#ffd700'; ctx.fillText(`YOUR BEST ${bt.toFixed(1)}s`, 0, ly + 20); }
-        if (this.levelNewFeatures.length) {
-            const [n1, d1] = FEATURE_INFO[this.levelNewFeatures[0]];
-            ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12; ctx.font = 'bold 12px Arial';
-            ctx.fillText('NEW: ' + n1, 0, -108);
-            ctx.shadowBlur = 0; ctx.font = '11px Arial'; ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillText(d1, 0, -91);
-            if (this.levelNewFeatures[1]) { const [n2, d2] = FEATURE_INFO[this.levelNewFeatures[1]]; ctx.fillStyle = '#ffd700'; ctx.font = 'bold 10px Arial'; ctx.fillText('ALSO NEW: ' + n2, 0, -72); }
-        }
-        ctx.shadowBlur = 0; ctx.strokeStyle = col; ctx.globalAlpha = alpha * 0.6; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(-80, 0); ctx.lineTo(-28, 0); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo( 28, 0); ctx.lineTo( 80, 0); ctx.stroke();
-
+        ctx.shadowBlur = 0;
+        if (hint) { ctx.font = '11px Arial'; ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillText('Tap to start', 0, py + PH - 16); }
         ctx.restore();
     }
 
@@ -2282,7 +2326,7 @@ class TiltBallGame {
         this.updateTimerUI();
         this.timerRunning = true;
         this._timerInterval = setInterval(() => {
-            if (!this.gameRunning || this.gamePaused || !this.timerRunning || this.timerFreeze > 0) return;
+            if (!this.gameRunning || this.gamePaused || this.levelIntroActive || !this.timerRunning || this.timerFreeze > 0) return;
             this.timeLeft--;
             this.updateTimerUI();
             if (this.timeLeft <= 0) { this.stopTimer(); this.timeUp(); }
