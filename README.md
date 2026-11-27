@@ -22,6 +22,10 @@ Open `index.html` on a phone (or serve the folder with any static host, such as 
 - **Special levels:** spinners, bouncy walls, mazes, orbiting obstacles, chaos.
 - **Assist:** after two lives lost on one level, obstacles slow down and you get +8 seconds (can be turned off in Settings).
 - **Modes:** Campaign, Daily Challenge (same layout for everyone each day, with a day streak, playable from the title screen), Endless.
+- **Rush:** a 30 second sprint. Clear as many short levels as you can. Each clear adds 2 seconds (up to 45), mines and lasers cost 3 seconds, and there are no lives. Your best is saved and shown on the title screen.
+- **Highlight clips:** the game keeps a short rolling recording of the play area. On the game over screen, **Share clip** sends the last few seconds (up to about 16) to a friend or social app. It can be turned off in Settings (Record highlight clips).
+- **Worlds:** every 25 levels the board gets a new look (Neon Grid, Circuit Board, Lava Fields, Frozen Peaks, Deep Space, Toxic Swamp, Sunset Dunes, The Abyss, Storm Front, The Void). The level screen is a winding map grouped by world.
+- **Sharing:** Daily and Challenge-a-friend shares send a picture card (on phones that support sharing images) plus a link. The Daily window shows a calendar of the days you've played.
 - **Skins** unlock by beating levels. The skin screen shows your progress toward each one.
 
 ### Settings
