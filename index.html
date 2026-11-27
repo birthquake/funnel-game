@@ -247,6 +247,28 @@
         .title-icon .ic { width: 22px; height: 22px; vertical-align: 0; }
         .sheet-btn { display: block; width: 100%; margin: 6px 0; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; background: linear-gradient(45deg, #4a5568, #63b3ed); color: #fff; }
         .sheet-btn.danger { background: linear-gradient(45deg, #742a2a, #f56565); }
+        .world-hd { display:flex; justify-content:space-between; align-items:baseline; margin:14px 2px 4px; font-size:12px; font-weight:bold; text-align:left; color:var(--wc); }
+        .world-hd small { font-size:10px; color:#ffd700; font-weight:600; }
+        .world-hd.locked { opacity:.4; color:#fff; }
+        .wrow { display:flex; justify-content:space-between; position:relative; padding:4px 0 0; }
+        .wrow.rev { flex-direction:row-reverse; }
+        .wrow::before { content:''; position:absolute; left:26px; right:26px; top:27px; height:3px; border-radius:2px; background:rgba(255,255,255,.12); }
+        .wcol { width:52px; display:flex; flex-direction:column; align-items:center; position:relative; z-index:1; }
+        .wnode { width:46px; height:46px; border-radius:50%; border:2px solid var(--wc); background:#1a202c; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:bold; color:#fff; cursor:pointer; }
+        .wnode.done { background:var(--wc); color:#0b1020; }
+        .wnode.cur { box-shadow:0 0 0 3px rgba(255,255,255,.22), 0 0 14px var(--wc); animation:nodePulse 1.6s ease-in-out infinite; }
+        .wnode.locked { opacity:.35; cursor:default; }
+        .wst { font-size:9px; color:#ffd700; letter-spacing:1px; min-height:11px; margin-top:1px; }
+        .wlink { height:12px; position:relative; }
+        .wlink::after { content:''; position:absolute; top:0; bottom:0; width:3px; border-radius:2px; background:rgba(255,255,255,.12); right:25px; }
+        .wlink.l::after { right:auto; left:25px; }
+        @keyframes nodePulse { 50% { box-shadow:0 0 0 6px rgba(255,255,255,.08), 0 0 20px var(--wc); } }
+        .cal { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; font-size:10px; margin:0 0 12px; }
+        .cal .wd { opacity:.5; font-size:9px; }
+        .cd { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:6px; background:rgba(255,255,255,.05); color:rgba(255,255,255,.55); }
+        .cd.played { background:#68d391; color:#0b1020; font-weight:bold; }
+        .cd.today { outline:1.5px solid #fbd38d; }
+        .cd.future { opacity:.3; }
         .level-cell { padding: 8px 0 6px; border-radius: 8px; font-size: 12px; font-weight: bold; text-align: center; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); color: #fff; cursor: pointer; }
         .level-cell small { display: block; font-size: 9px; color: #ffd700; letter-spacing: 1px; min-height: 11px; }
         .level-cell.locked { opacity: .3; cursor: default; }
@@ -341,7 +363,7 @@
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #ffd700;border-radius:15px;padding:18px;width:92%;max-width:330px;max-height:88vh;display:flex;flex-direction:column;color:#fff;text-align:center">
         <h3 style="color:#ffd700;margin-bottom:4px">Levels</h3>
         <p id="levelStarTotal" style="font-size:11px;opacity:.7;margin-bottom:10px"></p>
-        <div id="levelGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;overflow-y:auto;margin-bottom:12px;padding:2px"></div>
+        <div id="levelGrid" style="overflow-y:auto;flex:1;min-height:0;margin-bottom:12px;padding:2px 2px 6px"></div>
         <button onclick="game.closeLevelSelect()" style="background:#ffd700;color:#000;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-weight:bold">Close</button>
     </div>
 </div>
@@ -379,11 +401,13 @@
 </div>
 
 <div id="dailyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
-    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #68d391;border-radius:15px;padding:22px;width:90%;max-width:300px;color:#fff;text-align:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #68d391;border-radius:15px;padding:22px;width:90%;max-width:300px;max-height:92vh;overflow-y:auto;color:#fff;text-align:center">
         <h3 style="color:#68d391;margin-bottom:5px">Daily Challenge</h3>
         <p style="font-size:12px;opacity:.7;margin-bottom:4px">Same level layout for everyone today</p>
         <p id="dailyDateLabel" style="font-size:11px;color:#68d391;margin-bottom:15px"></p>
         <p id="dailyStreak" style="font-size:12px;color:#fbd38d;margin-bottom:8px"></p>
+        <div id="dailyCalTitle" style="font-size:11px;opacity:.7;margin-bottom:4px"></div>
+        <div id="dailyCal" class="cal"></div>
         <div id="dailyBestScore" style="font-size:13px;margin-bottom:15px;opacity:.8"></div>
         <div style="display:flex;gap:10px;justify-content:center">
             <button onclick="game.confirmDailyChallenge()" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold">Play!</button>
@@ -456,6 +480,18 @@ const FEATURE_INFO = {
     drift:      ['MOVING TARGET', 'The funnel drifts around the board'],
     chaos:      ['CHAOS', 'Faster, wilder obstacles'],
 };
+const WORLDS = [
+    { name: 'Neon Grid',     kind: 'grid',    color: '#4fd1c7' },
+    { name: 'Circuit Board', kind: 'circuit', color: '#f6ad55' },
+    { name: 'Lava Fields',   kind: 'lava',    color: '#fc8181' },
+    { name: 'Frozen Peaks',  kind: 'ice',     color: '#90cdf4' },
+    { name: 'Deep Space',    kind: 'space',   color: '#b794f4' },
+    { name: 'Toxic Swamp',   kind: 'hex',     color: '#68d391' },
+    { name: 'Sunset Dunes',  kind: 'dunes',   color: '#fbb36a' },
+    { name: 'The Abyss',     kind: 'abyss',   color: '#38b2ac' },
+    { name: 'Storm Front',   kind: 'storm',   color: '#a0aec0' },
+    { name: 'The Void',      kind: 'void',    color: '#ffe08a' },
+];
 const ICONS = {"play": {"d": "M7 4.5v15l12-7.5z", "fill": true}, "pause": {"d": "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z", "fill": true}, "menu": {"d": "M4 7h16M4 12h16M4 17h16", "fill": false}, "levels": {"d": "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z", "fill": false}, "calendar": {"d": "M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM4 10.5h16M8 3.5V7M16 3.5V7", "fill": false}, "infinity": {"d": "M12 12c-2-2.7-3.6-4-5.5-4a4 4 0 0 0 0 8c1.9 0 3.5-1.3 5.5-4zm0 0c2 2.7 3.6 4 5.5 4a4 4 0 0 0 0-8c-1.9 0-3.5 1.3-5.5 4z", "fill": false}, "skins": {"d": "M12 3.5c3.5 4.2 6 7.3 6 10.2a6 6 0 0 1-12 0c0-2.9 2.5-6 6-10.2z", "fill": false}, "trophy": {"d": "M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4", "fill": false}, "sliders": {"d": "M4 7h9M17 7h3M4 17h3M11 17h9M15 4.5v5M9 14.5v5", "fill": false}, "target": {"d": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 11.2a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6z", "fill": false}, "save": {"d": "M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6", "fill": false}, "skip": {"d": "M5 5l9 7-9 7zM18 5v14", "fill": false}, "heart": {"d": "M12 20.5s-7.5-4.6-7.5-10.4A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z", "fill": true}, "heart-off": {"d": "M12 20.5s-7.5-4.6-7.5-10.4A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z", "fill": false}, "lock": {"d": "M7 11h10v9H7zM9 11V8a3 3 0 0 1 6 0v3", "fill": false}, "shield": {"d": "M12 3l7 3v5.5c0 4.4-3 7.8-7 9.5-4-1.7-7-5.1-7-9.5V6z", "fill": false}, "clock": {"d": "M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4.5l3 1.5", "fill": false}, "hourglass": {"d": "M7 4h10M7 20h10M8 4c0 4 4 5 4 8s-4 4-4 8M16 4c0 4-4 5-4 8s4 4 4 8", "fill": false}, "mine": {"d": "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1", "fill": false}, "star": {"d": "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8z", "fill": true}, "bolt": {"d": "M13 3L5 13.5h6L10 21l8-10.5h-6z", "fill": true}, "flame": {"d": "M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .3 1.5 1 2 2 2 0-3-1-5 1-8z", "fill": false}, "check": {"d": "M5 12.5l4.5 4.5L19 7.5", "fill": false}, "assist": {"d": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v8M8 12h8", "fill": false}, "share": {"d": "M12 15V4M8 8l4-4 4 4M5 12v7h14v-7", "fill": false}, "phone": {"d": "M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2", "fill": false}};
 const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 
@@ -521,6 +557,7 @@ class TiltBallGame {
         this.trail = [];
         this.particles = [];
         this.shockwaves = [];
+        this.impacts = []; this.swirl = []; this.skinFx = []; this.starFx = []; this.flashFx = null;
         this.scorePopups = [];
 
         this.nearMissProximity = 0;
@@ -752,16 +789,31 @@ class TiltBallGame {
 
     showLevelSelect() {
         const grid = document.getElementById('levelGrid');
-        const tierCol = n => n <= 20 ? '#68d391' : n <= 40 ? '#f6ad55' : n <= 60 ? '#f56565' : n <= 80 ? '#9f7aea' : n <= 100 ? '#ffd700' : '#63b3ed';
-        let html = '', total = 0;
-        for (let n = 1; n <= this.levelConfigs.length; n++) {
-            const unlocked = n <= this.maxLevel;
-            const st = this.stars[n] || 0; total += st;
-            html += `<div class="level-cell ${unlocked ? '' : 'locked'}" style="border-color:${tierCol(n)}" ${unlocked ? `onclick="game.selectLevel(${n})"` : ''}>${unlocked ? n : ic('lock')}<small>${unlocked ? ('<span>' + '★'.repeat(st) + '</span><span style="color:rgba(255,255,255,.2)">' + '★'.repeat(3 - st) + '</span>') : ''}</small></div>`;
+        const total = this.levelConfigs.length;
+        let html = '', starTotal = 0;
+        const worldCount = Math.ceil(total / 25);
+        for (let w = 0; w < worldCount; w++) {
+            const first = w * 25 + 1, last = Math.min(total, first + 24), W = WORLDS[w % WORLDS.length];
+            if (first > this.maxLevel) { html += `<div class="world-hd locked"><span>${w + 1}. ${W.name}</span><small>reach level ${first}</small></div>`; continue; }
+            let ws = 0; for (let n = first; n <= last; n++) ws += this.stars[n] || 0;
+            starTotal += ws;
+            html += `<div class="world-hd" style="--wc:${W.color}"><span>${w + 1}. ${W.name}</span><small>★ ${ws} / ${(last - first + 1) * 3}</small></div>`;
+            for (let r = 0; first + r * 5 <= last; r++) {
+                const rev = r % 2 === 1;
+                html += `<div class="wrow ${rev ? 'rev' : ''}" style="--wc:${W.color}">`;
+                for (let n = first + r * 5; n < first + r * 5 + 5 && n <= last; n++) {
+                    const unlocked = n <= this.maxLevel, st = this.stars[n] || 0;
+                    const cls = !unlocked ? 'locked' : (n === this.maxLevel && !st ? 'cur' : (st ? 'done' : ''));
+                    html += `<div class="wcol"><div class="wnode ${cls}" ${unlocked ? `onclick="game.selectLevel(${n})"` : ''}>${unlocked ? n : ic('lock')}</div><div class="wst">${unlocked && st ? '★'.repeat(st) + '<span style="color:rgba(255,255,255,.2)">' + '★'.repeat(3 - st) + '</span>' : ''}</div></div>`;
+                }
+                html += '</div>';
+                if (first + (r + 1) * 5 <= last) html += `<div class="wlink ${rev ? 'l' : ''}" style="--wc:${W.color}"></div>`;
+            }
         }
         grid.innerHTML = html;
-        document.getElementById('levelStarTotal').textContent = `★ ${total} / ${this.levelConfigs.length * 3} stars  ·  unlocked ${this.maxLevel} / ${this.levelConfigs.length}`;
+        document.getElementById('levelStarTotal').textContent = `★ ${starTotal} / ${total * 3} stars  ·  unlocked ${this.maxLevel} / ${total}`;
         document.getElementById('levelModal').style.display = 'flex';
+        try { const cur = grid.querySelector('.cur') || grid.querySelector('.wnode.done:last-of-type'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center' }); } catch(e) {}
     }
     closeLevelSelect() { document.getElementById('levelModal').style.display = 'none'; }
 
@@ -931,6 +983,7 @@ class TiltBallGame {
         this.trail      = [];
         this.particles  = [];
         this.shockwaves = [];
+        this.impacts = []; this.swirl = []; this.skinFx = []; this.starFx = []; this.flashFx = null;
         this.scorePopups = [];
 
         const cfg = this.getCurrentConfig();
@@ -1296,8 +1349,20 @@ class TiltBallGame {
         }
     }
 
+    stepEffects() {
+        this.particles = this.particles.filter(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += .15;
+            p.life--;
+            return p.life > 0;
+        });
+        this.shockwaves = this.shockwaves.filter(s => { s.radius += 4; s.life--; return s.life > 0; });
+        this.scorePopups = this.scorePopups.filter(p => { if (p.kind !== 'stars') p.y -= 1; p.life--; return p.life > 0; });
+        this.updateFx();
+    }
+
     update() {
-        if (!this.gameRunning || this.gamePaused || this.levelCompleting) return;
+        if (!this.gameRunning || this.gamePaused) return;
+        if (this.levelCompleting) { this.stepEffects(); return; }   // keep the win burst animating
 
         if (this.levelIntroActive) {
             const total = this.levelIntroTotal || 120;
@@ -1349,7 +1414,7 @@ class TiltBallGame {
         if (this.ballX >= this.W-this.ballSize) { this.ballX = this.W-this.ballSize; this.ballVelX = -Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
         if (this.ballY <= 0)                    { this.ballY = 0;                    this.ballVelY =  Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
         if (this.ballY >= this.H-this.ballSize) { this.ballY = this.H-this.ballSize; this.ballVelY = -Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
-        if (wallHit) { this.shakeCanvas(); this.soundWallBounce(); this.squashAmt = 0.3; }
+        if (wallHit) { this.shakeCanvas(); this.soundWallBounce(); this.squashAmt = 0.3; this.addImpact(this.ballX + this.ballSize/2, this.ballY + this.ballSize/2, '255,255,255'); }
 
         this.obstacles.forEach(o => {
             if (o.type === 'spinner') o.spinAngle += o.spinSpeed * this.mvScale;
@@ -1438,6 +1503,8 @@ class TiltBallGame {
                 this.ballVelY = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelY));
                 this.spawnParticles(bcx, bcy, o.isMoving ? '#9f7aea' : (o.type==='laser'?'#fc8181':o.type==='circle'?'#4fd1c7':'#d69e2e'), 6);
                 this.shakeCanvas();
+                if (o.type === 'circle') o.flash = 1;
+                this.addImpact(bcx, bcy, o.type === 'circle' ? '79,209,199' : (o.type === 'mine' || o.type === 'laser') ? '252,129,129' : '255,255,255');
                 this.soundObstacleHit();
                 if (this.settings.haptic && navigator.vibrate) navigator.vibrate([30,10,30]);
                 this.squashAmt = 0.32;
@@ -1500,14 +1567,7 @@ class TiltBallGame {
             if (this.trail.length > 20) this.trail.shift();
         }
 
-        this.particles = this.particles.filter(p => {
-            p.x += p.vx; p.y += p.vy; p.vy += .15;
-            p.life--;
-            return p.life > 0;
-        });
-
-        this.shockwaves = this.shockwaves.filter(s => { s.radius += 4; s.life--; return s.life > 0; });
-        this.scorePopups = this.scorePopups.filter(p => { if (p.kind !== 'stars') p.y -= 1; p.life--; return p.life > 0; });
+        this.stepEffects();
 
         if (this.tutorialActive) {
             const moving = Math.abs(this.ballVelX) > 0.3 || Math.abs(this.ballVelY) > 0.3;
@@ -1521,14 +1581,18 @@ class TiltBallGame {
         this.bgTheme.b += (target.b - this.bgTheme.b) * 0.03;
     }
 
-    shakeCanvas() {
-        if (this._shakeTimer) return;
+    shakeCanvas(power = 1) {
+        if (this._shakeTimer) {
+            if (power <= 1) return;                      // a bigger shake replaces a small one
+            cancelAnimationFrame(this._shakeTimer); this._shakeTimer = null;
+        }
         let t = 0;
+        const len = power > 1 ? 14 : 8;
         const shake = () => {
             t++;
-            this.shakeOffsetX = (Math.random()-.5) * 6 * (1 - t/8);
-            this.shakeOffsetY = (Math.random()-.5) * 6 * (1 - t/8);
-            if (t < 8) this._shakeTimer = requestAnimationFrame(shake);
+            this.shakeOffsetX = (Math.random()-.5) * 6 * power * (1 - t/len);
+            this.shakeOffsetY = (Math.random()-.5) * 6 * power * (1 - t/len);
+            if (t < len) this._shakeTimer = requestAnimationFrame(shake);
             else { this.shakeOffsetX = 0; this.shakeOffsetY = 0; this._shakeTimer = null; }
         };
         this._shakeTimer = requestAnimationFrame(shake);
@@ -1540,6 +1604,48 @@ class TiltBallGame {
             const speed = 2 + Math.random()*3;
             this.particles.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - Math.random()*2, life: 20 + Math.random()*20, color, size: 2 + Math.random()*3 });
         }
+    }
+
+    flash(rgb, life = 16, peak = 0.3) { this.flashFx = { rgb, life, max: life, peak }; }
+
+    addImpact(x, y, rgb) { if (this.impacts.length < 12) this.impacts.push({ x, y, rgb, life: 16, max: 16 }); }
+
+    spawnStarBurst(x, y, n) {
+        for (let i = 0; i < n; i++) {
+            const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.55 + (Math.random() - .5) * .2;
+            this.starFx.push({ x, y, vx: Math.cos(a) * 2.4, vy: Math.sin(a) * 4.2, life: 60, max: 60, delay: i * 7, spin: (Math.random() - .5) * .2, rot: 0 });
+        }
+    }
+
+    emitSkinFx() {
+        const spd = Math.hypot(this.ballVelX, this.ballVelY);
+        if (spd < 1.2 || this.tick % 3 !== 0 || this.skinFx.length > 70) return;
+        const x = this.ballX + this.ballSize / 2, y = this.ballY + this.ballSize / 2, k = this.activeSkin;
+        if (k === 1) this.skinFx.push({ type: 'ripple', x, y, life: 30, max: 30 });
+        else if (k === 2) this.skinFx.push({ type: 'leaf', x, y, vx: (Math.random() - .5) * 1.2 - this.ballVelX * .1, vy: (Math.random() - .5) * 1.2 - this.ballVelY * .1 + .2, rot: Math.random() * 6, life: 42, max: 42 });
+        else if (k === 3) this.skinFx.push({ type: 'spark', x: x + (Math.random() - .5) * 10, y: y + (Math.random() - .5) * 10, life: 26, max: 26, size: 3 + Math.random() * 3 });
+        else if (k === 4) {
+            const pts = [[x, y]]; let px = x, py = y; const a0 = Math.random() * Math.PI * 2;
+            for (let i = 0; i < 4; i++) { px += Math.cos(a0 + (Math.random() - .5) * 1.6) * 6; py += Math.sin(a0 + (Math.random() - .5) * 1.6) * 6; pts.push([px, py]); }
+            this.skinFx.push({ type: 'arc', pts, life: 9, max: 9 });
+        }
+    }
+
+    updateFx() {
+        const fs = Math.max(this.getCurrentConfig().funnelSize, 30);
+        const fcx = this.funnelX + fs / 2, fcy = this.funnelY + fs / 2, nm = this.nearMissProximity || 0;
+        // funnel swirl: dots spiral into the hole, faster and denser as the ball gets close
+        if (!this.levelCompleting && this.swirl.length < 34 && (nm > 0.25 || this.tick % 4 === 0)) {
+            this.swirl.push({ a: Math.random() * Math.PI * 2, r: fs * (1.15 + Math.random() * 0.7) });
+        }
+        this.swirl = this.swirl.filter(d => { d.a += 0.07 + nm * 0.1; d.r -= 0.45 + nm * 1.1; return d.r > fs * 0.28; });
+        this._swirlC = { x: fcx, y: fcy, fs };
+        if (this.settings.trail) this.emitSkinFx();
+        this.skinFx = this.skinFx.filter(f => { f.life--; if (f.type === 'leaf') { f.x += f.vx; f.y += f.vy; f.rot += .12; } return f.life > 0; });
+        this.impacts = this.impacts.filter(i => --i.life > 0);
+        this.starFx = this.starFx.filter(f => { if (f.delay > 0) { f.delay--; return true; } f.x += f.vx; f.y += f.vy; f.vy -= 0.05; f.rot += f.spin; f.life--; return f.life > 0; });
+        if (this.flashFx && --this.flashFx.life <= 0) this.flashFx = null;
+        this.obstacles.forEach(o => { if (o.flash > 0) o.flash = Math.max(0, o.flash - 0.06); });
     }
 
     spawnExplosion(x, y) {
@@ -1580,19 +1686,24 @@ class TiltBallGame {
         ctx.fillStyle = vg;
         ctx.fillRect(0, 0, this.W, this.H);
 
-        this.drawGrid(ctx);
+        this.drawWorld(ctx);
 
         ctx.save();
         ctx.translate(sx, sy);
 
         this.drawTrail(ctx);
+        this.drawSkinFx(ctx);
         this.drawFunnel(ctx);
+        this.drawSwirl(ctx);
         this.drawObstacles(ctx);
+        this.drawBallLight(ctx);
         if (this.settings.colourblind) this.drawContrastMarks(ctx);
         this.drawPowerups(ctx);
         this.drawParticles(ctx);
+        this.drawImpacts(ctx);
         this.drawShockwaves(ctx);
         this.drawBall(ctx);
+        this.drawStarFx(ctx);
         this.drawScorePopups(ctx);
 
         if (this.gameRunning && !this.levelIntroActive) this.drawEffects(ctx);
@@ -1600,6 +1711,81 @@ class TiltBallGame {
         if (this.joystickActive && this.gameRunning && !this.gamePaused && !this.levelIntroActive) this.drawJoystick(ctx);
         if (this.levelIntroActive) this.drawLevelIntro(ctx);
 
+        ctx.restore();
+
+        if (this.flashFx) {
+            const f = this.flashFx;
+            ctx.fillStyle = `rgba(${f.rgb},${f.peak * (f.life / f.max)})`;
+            ctx.fillRect(0, 0, this.W, this.H);
+        }
+    }
+
+    // ---- extra visual effects ----
+    skinRgb() { return ['245,101,101','99,179,237','104,211,145','255,215,0','183,148,244'][this.activeSkin] || '245,101,101'; }
+
+    drawBallLight(ctx) {
+        if (!this.gameRunning || this.levelIntroActive) return;
+        const x = this.ballX + this.ballSize / 2, y = this.ballY + this.ballSize / 2, rgb = this.skinRgb();
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const g = ctx.createRadialGradient(x, y, 4, x, y, 80);
+        g.addColorStop(0, `rgba(${rgb},0.20)`); g.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = g; ctx.fillRect(x - 80, y - 80, 160, 160);
+        ctx.restore();
+    }
+
+    drawSwirl(ctx) {
+        const c = this._swirlC; if (!c || !this.swirl.length || this.levelCompleting) return;
+        const nm = this.nearMissProximity || 0;
+        ctx.save(); ctx.lineCap = 'round';
+        this.swirl.forEach(d => {
+            const t = Math.min(1, (d.r - c.fs * 0.28) / (c.fs * 1.4));
+            const x = c.x + Math.cos(d.a) * d.r, y = c.y + Math.sin(d.a) * d.r;
+            const x0 = c.x + Math.cos(d.a - 0.35) * (d.r + 3), y0 = c.y + Math.sin(d.a - 0.35) * (d.r + 3);
+            ctx.strokeStyle = `rgba(154,230,180,${(0.15 + 0.5 * (1 - t)) * (0.6 + nm * 0.6)})`; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x, y); ctx.stroke();
+        });
+        ctx.restore();
+    }
+
+    drawImpacts(ctx) {
+        this.impacts.forEach(i => {
+            const t = 1 - i.life / i.max;
+            ctx.save(); ctx.strokeStyle = `rgba(${i.rgb},${0.8 * (1 - t)})`; ctx.lineWidth = 2 * (1 - t) + 0.5;
+            ctx.beginPath(); ctx.arc(i.x, i.y, 4 + t * 16, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+        });
+    }
+
+    drawStarFx(ctx) {
+        this.starFx.forEach(f => {
+            if (f.delay > 0) return;
+            const a = Math.min(1, f.life / 20);
+            ctx.save(); ctx.globalAlpha = a; ctx.translate(f.x, f.y); ctx.rotate(f.rot);
+            this.drawIcon(ctx, 'star', 0, 0, 18, '#ffd700', 1); ctx.restore();
+        });
+    }
+
+    drawSkinFx(ctx) {
+        if (!this.skinFx.length) return;
+        ctx.save();
+        this.skinFx.forEach(f => {
+            const t = 1 - f.life / f.max;
+            if (f.type === 'ripple') {
+                ctx.strokeStyle = `rgba(147,205,250,${0.5 * (1 - t)})`; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.ellipse(f.x, f.y, 5 + t * 16, 3 + t * 9, 0, 0, Math.PI * 2); ctx.stroke();
+            } else if (f.type === 'leaf') {
+                ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); ctx.globalAlpha = 1 - t;
+                ctx.fillStyle = t < 0.5 ? '#68d391' : '#9ae6b4'; ctx.beginPath(); ctx.ellipse(0, 0, 5, 2.4, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#276749'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(5, 0); ctx.stroke(); ctx.restore();
+            } else if (f.type === 'spark') {
+                const s = f.size * Math.sin(Math.PI * (1 - t));
+                ctx.fillStyle = `rgba(255,236,150,${1 - t * 0.6})`; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 6;
+                ctx.beginPath(); ctx.moveTo(f.x, f.y - s); ctx.lineTo(f.x + s * 0.3, f.y - s * 0.3); ctx.lineTo(f.x + s, f.y); ctx.lineTo(f.x + s * 0.3, f.y + s * 0.3);
+                ctx.lineTo(f.x, f.y + s); ctx.lineTo(f.x - s * 0.3, f.y + s * 0.3); ctx.lineTo(f.x - s, f.y); ctx.lineTo(f.x - s * 0.3, f.y - s * 0.3); ctx.closePath(); ctx.fill();
+            } else if (f.type === 'arc') {
+                ctx.strokeStyle = `rgba(225,205,255,${1 - t})`; ctx.shadowColor = '#b794f4'; ctx.shadowBlur = 8; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+                ctx.beginPath(); f.pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+            }
+        });
         ctx.restore();
     }
 
@@ -1633,6 +1819,9 @@ class TiltBallGame {
         add(diff, 'bold 14px Arial', col, 20);
         const ml = this.mechLabel(cfg);
         if (ml) add(ml, 'bold 12px Arial', col, 18);
+        const wi = this.worldIndex(this.gameMode === 'endless' ? this.endlessLevel + 4 : this.levelIntroLevel);
+        if (this.gameMode === 'normal' && this.levelIntroLevel > 1 && (this.levelIntroLevel - 1) % 25 === 0 && !quick) add('NEW WORLD', 'bold 14px Arial', '#ffd700', 22);
+        add(WORLDS[wi].name.toUpperCase(), '12px Arial', 'rgba(255,255,255,.65)', 18);
         if (!quick) {
             if (this.levelNewFeatures.length) {
                 rows.push({ gap: 8 });
@@ -1682,6 +1871,95 @@ class TiltBallGame {
         }
         ctx.shadowBlur = 0;
         if (hint) { ctx.font = 'bold 13px Arial'; ctx.fillStyle = `rgba(255,255,255,${0.55 + 0.4 * Math.abs(Math.sin(this.levelIntroHeld / 18))})`; ctx.fillText('TAP TO START', 0, py + PH - 17); }
+        ctx.restore();
+    }
+
+    worldIndex(lvl) {
+        if (lvl === undefined) lvl = this.gameMode === 'endless' ? this.endlessLevel + 4 : this.level;
+        return Math.floor((Math.max(1, lvl) - 1) / 25) % WORLDS.length;
+    }
+
+    _worldGeo(idx) {
+        this._wgeo = this._wgeo || {};
+        if (this._wgeo[idx]) return this._wgeo[idx];
+        let seed = idx * 977 + 13; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+        const W = this.W, H = this.H, kind = WORLDS[idx].kind, g = {};
+        if (kind === 'circuit') {
+            g.paths = [];
+            for (let i = 0; i < 12; i++) {
+                let x = Math.round(rnd() * 10) * 35, y = Math.round(rnd() * 10) * 35; const pts = [[x, y]];
+                for (let k = 0; k < 4; k++) { if (k % 2 === 0) x += (Math.round(rnd() * 4) - 2) * 35 || 35; else y += (Math.round(rnd() * 4) - 2) * 35 || 35; x = Math.max(0, Math.min(W, x)); y = Math.max(0, Math.min(H, y)); pts.push([x, y]); }
+                let len = 0; for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k-1][0], pts[k][1] - pts[k-1][1]);
+                g.paths.push({ pts, len, off: rnd(), sp: 0.04 + rnd() * 0.05 });
+            }
+        } else if (kind === 'lava') {
+            g.cracks = []; for (let i = 0; i < 6; i++) { let x = rnd() * W, y = rnd() * H; const pts = [[x, y]]; for (let k = 0; k < 5; k++) { x += (rnd() - .5) * 70; y += (rnd() - .5) * 70; pts.push([x, y]); } g.cracks.push(pts); }
+            g.embers = Array.from({ length: 26 }, () => ({ x: rnd() * W, y: rnd() * H, sp: 8 + rnd() * 14, ph: rnd() * 6, r: 0.8 + rnd() * 1.6 }));
+        } else if (kind === 'ice') {
+            g.flakes = Array.from({ length: 34 }, () => ({ x: rnd() * W, y: rnd() * H, sp: 6 + rnd() * 10, ph: rnd() * 6, r: 0.8 + rnd() * 1.6 }));
+            g.tris = Array.from({ length: 7 }, () => { const x = rnd() * W, y = rnd() * H, s2 = 40 + rnd() * 70; return [[x, y], [x + s2, y + (rnd() - .3) * s2], [x + (rnd() - .5) * s2, y + s2]]; });
+        } else if (kind === 'space') {
+            g.stars = Array.from({ length: 80 }, () => ({ x: rnd() * W, y: rnd() * H, r: 0.5 + rnd() * 1.2, ph: rnd() * 6, sp: 0.8 + rnd() * 2 }));
+            g.neb = Array.from({ length: 3 }, () => ({ x: rnd() * W, y: rnd() * H, r: 90 + rnd() * 70 }));
+        } else if (kind === 'hex' || kind === 'abyss') {
+            g.bubbles = Array.from({ length: 16 }, () => ({ x: rnd() * W, y: rnd() * H, sp: 10 + rnd() * 18, ph: rnd() * 6, r: 1.5 + rnd() * 3 }));
+        } else if (kind === 'storm') {
+            g.rain = Array.from({ length: 46 }, () => ({ x: rnd() * (W + 60), y: rnd() * H, sp: 160 + rnd() * 140, len: 8 + rnd() * 9 }));
+        } else if (kind === 'void') {
+            g.motes = Array.from({ length: 30 }, () => ({ a: rnd() * 6.28, r: 30 + rnd() * 190, sp: 6 + rnd() * 14 }));
+        }
+        return (this._wgeo[idx] = g);
+    }
+
+    drawWorld(ctx) {
+        const idx = this.worldIndex(), kind = WORLDS[idx].kind, th = this.getTheme(), rgb = th.rgb, W = this.W, H = this.H, t = this.time;
+        const g = this._worldGeo(idx);
+        const pos = (v, sp, size) => ((v - t * sp) % size + size) % size;
+        ctx.save();
+        if (kind === 'grid') { this.drawGrid(ctx); ctx.restore(); return; }
+        if (kind !== 'space' && kind !== 'void' && kind !== 'storm' && kind !== 'dunes') { ctx.globalAlpha = 0.55; this.drawGrid(ctx); ctx.globalAlpha = 1; }
+        if (kind === 'circuit') {
+            ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+            g.paths.forEach(p => {
+                ctx.strokeStyle = `rgba(${rgb},0.16)`; ctx.beginPath(); p.pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+                ctx.fillStyle = `rgba(${rgb},0.3)`; p.pts.forEach(q => { ctx.beginPath(); ctx.arc(q[0], q[1], 2.4, 0, 6.3); ctx.fill(); });
+                let d = ((t * p.sp + p.off) % 1) * p.len, k = 1;   // a data pulse running along the trace
+                while (k < p.pts.length) { const seg = Math.hypot(p.pts[k][0] - p.pts[k-1][0], p.pts[k][1] - p.pts[k-1][1]); if (d <= seg) { const f = d / (seg || 1); ctx.fillStyle = `rgba(${rgb},0.8)`; ctx.beginPath(); ctx.arc(p.pts[k-1][0] + (p.pts[k][0] - p.pts[k-1][0]) * f, p.pts[k-1][1] + (p.pts[k][1] - p.pts[k-1][1]) * f, 2.2, 0, 6.3); ctx.fill(); break; } d -= seg; k++; }
+            });
+        } else if (kind === 'lava') {
+            ctx.lineJoin = 'round'; ctx.strokeStyle = `rgba(255,110,40,${0.14 + 0.07 * Math.sin(t * 1.4)})`; ctx.lineWidth = 2.5;
+            g.cracks.forEach(c => { ctx.beginPath(); c.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); });
+            g.embers.forEach(e => { const y = pos(e.y, e.sp, H + 20), x = e.x + Math.sin(t * .8 + e.ph) * 8; ctx.fillStyle = `rgba(255,${140 + (e.ph * 20 | 0)},60,${0.55 * (y / H)})`; ctx.beginPath(); ctx.arc(x, y, e.r, 0, 6.3); ctx.fill(); });
+        } else if (kind === 'ice') {
+            ctx.fillStyle = `rgba(${rgb},0.05)`; g.tris.forEach(tr => { ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.fill(); });
+            ctx.strokeStyle = `rgba(${rgb},0.1)`; ctx.lineWidth = 1; for (let i = -4; i < 12; i++) { ctx.beginPath(); ctx.moveTo(i * 40, 0); ctx.lineTo(i * 40 + 200, H); ctx.stroke(); }
+            g.flakes.forEach(f => { const y = (f.y + t * f.sp) % H, x = f.x + Math.sin(t * .7 + f.ph) * 10; ctx.fillStyle = 'rgba(235,248,255,0.4)'; ctx.beginPath(); ctx.arc(x, y, f.r, 0, 6.3); ctx.fill(); });
+        } else if (kind === 'space') {
+            g.neb.forEach(n => { const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r); gr.addColorStop(0, `rgba(${rgb},0.12)`); gr.addColorStop(1, `rgba(${rgb},0)`); ctx.fillStyle = gr; ctx.fillRect(n.x - n.r, n.y - n.r, n.r * 2, n.r * 2); });
+            g.stars.forEach(st => { ctx.fillStyle = `rgba(255,255,255,${0.2 + 0.55 * Math.abs(Math.sin(t * st.sp + st.ph))})`; ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 6.3); ctx.fill(); });
+        } else if (kind === 'hex') {
+            ctx.strokeStyle = `rgba(${rgb},0.09)`; ctx.lineWidth = 1; const R = 26, hh = R * Math.sqrt(3);
+            for (let row = -1; row < H / hh + 1; row++) for (let col = -1; col < W / (R * 1.5) + 1; col++) {
+                const cx = col * R * 1.5, cy = row * hh + (col % 2 ? hh / 2 : 0);
+                ctx.beginPath(); for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); } ctx.closePath(); ctx.stroke();
+            }
+            g.bubbles.forEach(b => { const y = pos(b.y, b.sp, H + 20), x = b.x + Math.sin(t + b.ph) * 6; ctx.strokeStyle = `rgba(${rgb},0.3)`; ctx.beginPath(); ctx.arc(x, y, b.r, 0, 6.3); ctx.stroke(); });
+        } else if (kind === 'dunes') {
+            const sg = ctx.createRadialGradient(W * .8, H * .15, 4, W * .8, H * .15, 120); sg.addColorStop(0, `rgba(${rgb},0.22)`); sg.addColorStop(1, `rgba(${rgb},0)`); ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
+            ctx.lineWidth = 1.5; for (let i = 0; i < 7; i++) { ctx.strokeStyle = `rgba(${rgb},${0.05 + i * 0.02})`; ctx.beginPath(); for (let x = 0; x <= W; x += 10) { const y = 40 + i * 48 + Math.sin(x / 55 + t * 0.35 + i) * 12; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
+        } else if (kind === 'abyss') {
+            for (let i = 0; i < 5; i++) { const x0 = 40 + i * 70 + Math.sin(t * 0.3 + i) * 20; ctx.fillStyle = `rgba(${rgb},0.045)`; ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + 26, 0); ctx.lineTo(x0 - 40 + 26, H); ctx.lineTo(x0 - 40 - 20, H); ctx.closePath(); ctx.fill(); }
+            g.bubbles.forEach(b => { const y = pos(b.y, b.sp, H + 20), x = b.x + Math.sin(t * .8 + b.ph) * 8; ctx.strokeStyle = 'rgba(190,240,240,0.28)'; ctx.beginPath(); ctx.arc(x, y, b.r, 0, 6.3); ctx.stroke(); });
+        } else if (kind === 'storm') {
+            ctx.strokeStyle = 'rgba(200,215,255,0.17)'; ctx.lineWidth = 1;
+            g.rain.forEach(r => { const y = (r.y + t * r.sp) % (H + 20) - 10, x = r.x - ((r.y + t * r.sp) % (H + 20)) * 0.25; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - r.len * 0.25, y + r.len); ctx.stroke(); });
+            if ((t % 7) < 0.12) { ctx.fillStyle = 'rgba(210,220,255,0.05)'; ctx.fillRect(0, 0, W, H); }
+        } else if (kind === 'void') {
+            ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(t * 0.04); ctx.strokeStyle = `rgba(${rgb},0.07)`; ctx.lineWidth = 1;
+            for (let i = 0; i < 24; i++) { ctx.rotate(Math.PI / 12); ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(260, 0); ctx.stroke(); } ctx.restore();
+            [60, 110, 160].forEach((r, i) => { ctx.strokeStyle = `rgba(${rgb},${0.05 + 0.04 * Math.sin(t * 1.2 + i)})`; ctx.beginPath(); ctx.arc(W / 2, H / 2, r, 0, 6.3); ctx.stroke(); });
+            g.motes.forEach(m => { const r = ((m.r - t * m.sp) % 200 + 200) % 200 + 20; ctx.fillStyle = `rgba(${rgb},${0.5 * (r / 220)})`; ctx.beginPath(); ctx.arc(W / 2 + Math.cos(m.a + t * .05) * r, H / 2 + Math.sin(m.a + t * .05) * r, 1.3, 0, 6.3); ctx.fill(); });
+        }
         ctx.restore();
     }
 
@@ -1801,13 +2079,19 @@ class TiltBallGame {
                 ctx.beginPath(); ctx.arc(0, 0, r*0.9, 0, Math.PI*2); ctx.fill(); ctx.stroke();
                 ctx.shadowBlur = 0; ctx.fillStyle = `rgba(255,120,120,${0.5 + pulse * 0.5})`;
                 ctx.beginPath(); ctx.arc(0, 0, r*0.32, 0, Math.PI*2); ctx.fill();
+                if (Math.sin(this.time * 8 + o.phase) > 0.78) {   // warning blink
+                    ctx.fillStyle = '#fff1f1'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 12;
+                    ctx.beginPath(); ctx.arc(0, 0, r*0.2, 0, Math.PI*2); ctx.fill();
+                    ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,170,170,.8)'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(0, 0, r*1.7, 0, Math.PI*2); ctx.stroke();
+                }
                 ctx.restore(); return;
             }
 
             if (o.type === 'circle') {
-                const r = o.w/2;
+                const r = o.w/2, fl = o.flash || 0;
                 const halo = ctx.createRadialGradient(cx, cy, r*.6, cx, cy, r*2);
-                halo.addColorStop(0, `rgba(${edgeRgb},.28)`); halo.addColorStop(1, `rgba(${edgeRgb},0)`);
+                halo.addColorStop(0, `rgba(${edgeRgb},${0.28 + fl * 0.5})`); halo.addColorStop(1, `rgba(${edgeRgb},0)`);
                 ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(cx, cy, r*2, 0, Math.PI*2); ctx.fill();
                 const body = ctx.createRadialGradient(cx - r*.3, cy - r*.3, r*.1, cx, cy, r);
                 body.addColorStop(0, '#4a5568'); body.addColorStop(1, '#10151f');
@@ -1817,6 +2101,10 @@ class TiltBallGame {
                 ctx.shadowBlur = 0; ctx.lineWidth = 1.5; ctx.strokeStyle = `rgba(${edgeRgb},.6)`;
                 ctx.beginPath(); ctx.arc(cx, cy, r * (0.55 + Math.sin(this.time*3 + o.phase) * 0.06), 0, Math.PI*2); ctx.stroke();
                 ctx.fillStyle = edge; ctx.beginPath(); ctx.arc(cx, cy, r*.14, 0, Math.PI*2); ctx.fill();
+                if (fl > 0) {   // lights up when struck
+                    ctx.fillStyle = `rgba(255,255,255,${fl * 0.35})`; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = `rgba(${edgeRgb},${fl})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r * (1.1 + (1 - fl) * 0.8), 0, Math.PI*2); ctx.stroke();
+                }
                 ctx.restore(); return;
             }
 
@@ -1824,6 +2112,9 @@ class TiltBallGame {
                 const hl = o.laserLength/2;
                 const x1 = cx + Math.cos(o.laserAngle)*hl, y1 = cy + Math.sin(o.laserAngle)*hl;
                 const x2 = cx - Math.cos(o.laserAngle)*hl, y2 = cy - Math.sin(o.laserAngle)*hl;
+                ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+                ctx.strokeStyle = `rgba(245,101,101,${0.16 + 0.05 * Math.sin(this.time * 30)})`; ctx.lineWidth = 11;
+                ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore();
                 ctx.shadowColor = '#f56565'; ctx.shadowBlur = 14;
                 const grad = ctx.createLinearGradient(x1,y1,x2,y2);
                 grad.addColorStop(0,'rgba(245,101,101,.5)'); grad.addColorStop(0.5,'rgba(245,101,101,1)'); grad.addColorStop(1,'rgba(245,101,101,.5)');
@@ -1832,6 +2123,9 @@ class TiltBallGame {
                 ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,220,220,0.9)'; ctx.lineWidth = 1;
                 ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
                 [[x1,y1],[x2,y2]].forEach(([ex,ey]) => {
+                    const eg = ctx.createRadialGradient(ex, ey, 1, ex, ey, 14);
+                    eg.addColorStop(0, `rgba(255,150,150,${0.45 + 0.25 * Math.sin(this.time * 12)})`); eg.addColorStop(1, 'rgba(245,101,101,0)');
+                    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, 14, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = '#2d3748'; ctx.beginPath(); ctx.arc(ex, ey, 4.5, 0, Math.PI*2); ctx.fill();
                     ctx.strokeStyle = '#f56565'; ctx.lineWidth = 1.5; ctx.stroke();
                 });
@@ -2036,6 +2330,7 @@ class TiltBallGame {
         }
 
         this.spawnExplosion(fcx, fcy);
+        this.flash('160,255,200', 16, 0.22);
 
         const mult  = this.levelHitCount === 0 ? (this.combo++, this.getComboMultiplier()) : (this.combo = 0, 1);
         const bonus = Math.round(this.level * 100 * mult);
@@ -2048,11 +2343,12 @@ class TiltBallGame {
         if (this.gameMode === 'normal') { this.recordStars(this.level, stars); newBest = this.recordTime(this.level, elapsed); }
 
         const fch = (this.gameMode === 'friend' && this.challenge) ? this.challenge : null;
-        if (this.gameMode === 'normal') this.lastClearedLevel = this.level;
+        if (this.gameMode === 'normal') { this.lastClearedLevel = this.level; }
         const popColor = mult > 1 ? '#ffd700' : '#68d391';
         this.scorePopups.push({ x: fcx, y: fcy - 20, text: `+${bonus}`, life: 60, maxLife: 60, color: popColor });
         this.scorePopups.push({ x: fcx, y: Math.min(fcy + 30, this.H - 40), kind: 'stars', count: stars, life: 75, maxLife: 75, color: '#ffd700' });
         this.scorePopups.push({ x: fcx, y: Math.min(fcy + 54, this.H - 14), text: (newBest ? 'NEW BEST ' : '') + elapsed.toFixed(1) + 's', life: 80, maxLife: 80, color: newBest ? '#ffd700' : '#cbd5e0' });
+        this.spawnStarBurst(fcx, fcy, stars);
         for (let i = 0; i < stars; i++) setTimeout(() => this._playTone(520 + i * 160, 'sine', 0.16, 0.16, 0.005, 700 + i * 160), 250 + i * 130);
         this.showComboPopup(mult, fcx, fcy);
         if (fch) {
@@ -2074,6 +2370,7 @@ class TiltBallGame {
         if (fch) this.endFriendChallenge(); else this.level++;
         if (this.gameMode === 'normal' && !fch) this.maxLevel = Math.min(Math.max(this.maxLevel, this.level), this.levelConfigs.length);
         this.checkAchievements();
+        if (this.gameMode === 'normal' && !fch && this.lastClearedLevel && this.bestTimes[this.lastClearedLevel] !== undefined) this.prepareChallengeCard(this.lastClearedLevel, this.bestTimes[this.lastClearedLevel]);
 
         if (this.gameMode === 'normal' && !fch && this.level > this.levelConfigs.length) { this.endGame(); return; }
 
@@ -2379,6 +2676,7 @@ class TiltBallGame {
         this.renderHearts();
         if (this.settings.haptic && navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
         this.spawnParticles(this.ballX+10, this.ballY+10, '#f56565', 20);
+        this.shakeCanvas(3); this.flash('245,101,101', 20, 0.32);
         if (this.lives <= 0) { this.triggerGameOver(reason); }
         else {
             this.showNotification(`${ic('heart-off')} Life lost: ${reason}`, `${this.lives} ${this.lives===1?'life':'lives'} remaining` + (this.assistScale() < 1 ? ' • Assist on: slower obstacles, +8s' : ''), 2200);
@@ -2396,6 +2694,7 @@ class TiltBallGame {
         document.getElementById('gameOverLevel').textContent = this.level;
         document.getElementById('gameOverBest').textContent  = this.bestScore;
         document.getElementById('gameOverShare').style.display = (this.gameMode === 'daily' && this.getDailyBest()) ? 'inline-flex' : 'none';
+        if (this.gameMode === 'daily') this.prepareDailyCard();
         document.getElementById('gameOverModal').style.display = 'flex';
         if (this.settings.haptic && navigator.vibrate) navigator.vibrate([400,100,400]);
     }
@@ -2553,7 +2852,25 @@ class TiltBallGame {
             ? `Your best today: ${todayBest.score} pts (level ${todayBest.level})`
             : 'No score yet today - go for it!';
         document.getElementById('dailyShareBtn').style.display = todayBest ? 'inline-flex' : 'none';
+        this.renderStreakCalendar(saved);
+        this.prepareDailyCard();
         document.getElementById('dailyModal').style.display = 'flex';
+    }
+
+    renderStreakCalendar(saved) {
+        const el = document.getElementById('dailyCal'); if (!el) return;
+        const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+        const firstDow = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate(), today = now.getDate();
+        let html = ['S','M','T','W','T','F','S'].map(d => `<div class="wd">${d}</div>`).join('');
+        for (let i = 0; i < firstDow; i++) html += '<div></div>';
+        let played = 0;
+        for (let d = 1; d <= days; d++) {
+            const key = this.dateStr(new Date(y, m, d)), did = !!(saved && saved[key]);
+            if (did) played++;
+            html += `<div class="cd ${did ? 'played' : ''} ${d === today ? 'today' : ''} ${d > today ? 'future' : ''}">${d}</div>`;
+        }
+        el.innerHTML = html;
+        document.getElementById('dailyCalTitle').textContent = `${now.toLocaleString('en-US', { month: 'long' })} ${y} - ${played} ${played === 1 ? 'day' : 'days'} played`;
     }
 
     closeDailyModal() { document.getElementById('dailyModal').style.display = 'none'; }
@@ -2570,6 +2887,63 @@ class TiltBallGame {
     // ---- Sharing and friend challenges ----
     getDailyBest() {
         try { return JSON.parse(localStorage.getItem('tiltSphereDailyScores') || '{}')[this.getDailyDateString()] || null; } catch(e) { return null; }
+    }
+
+    makeShareCard(o) {
+        return new Promise(resolve => {
+            setTimeout(() => resolve(null), 4000);   // never leave a share waiting on a picture
+            try {
+                const c = document.createElement('canvas'); c.width = 1080; c.height = 1080;
+                if (!c.toBlob) { resolve(null); return; }
+                const x = c.getContext('2d'), accent = o.accent || '#68d391';
+                const bg = x.createLinearGradient(0, 0, 1080, 1080); bg.addColorStop(0, '#0f0f23'); bg.addColorStop(0.55, '#16213e'); bg.addColorStop(1, '#0f3460');
+                x.fillStyle = bg; x.fillRect(0, 0, 1080, 1080);
+                x.strokeStyle = 'rgba(255,255,255,0.05)'; x.lineWidth = 2; for (let i = 0; i <= 1080; i += 72) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 1080); x.stroke(); x.beginPath(); x.moveTo(0, i); x.lineTo(1080, i); x.stroke(); }
+                const fx = 800, fy = 770;   // funnel
+                const gl = x.createRadialGradient(fx, fy, 40, fx, fy, 330); gl.addColorStop(0, 'rgba(104,211,145,0.35)'); gl.addColorStop(1, 'rgba(104,211,145,0)'); x.fillStyle = gl; x.fillRect(fx - 340, fy - 340, 680, 680);
+                [[190, '#68d391'], [140, '#48bb78']].forEach(([r, col]) => { x.strokeStyle = col; x.lineWidth = 12; x.beginPath(); x.arc(fx, fy, r, 0, 6.3); x.stroke(); });
+                x.fillStyle = '#06180f'; x.beginPath(); x.arc(fx, fy, 88, 0, 6.3); x.fill();
+                for (let i = 0; i < 14; i++) { x.fillStyle = `rgba(245,101,101,${0.04 + i * 0.012})`; x.beginPath(); x.arc(330 + i * 26, 905 - i * 4, 12 + i * 1.2, 0, 6.3); x.fill(); }
+                const bx = 330 + 14 * 26, by = 905 - 56; const bgr = x.createRadialGradient(bx - 10, by - 12, 4, bx, by, 34); bgr.addColorStop(0, '#fff'); bgr.addColorStop(0.3, '#fc8181'); bgr.addColorStop(1, '#c53030');
+                x.fillStyle = bgr; x.beginPath(); x.arc(bx, by, 34, 0, 6.3); x.fill();
+                x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+                x.fillStyle = '#4fd1c7'; x.font = 'bold 76px Arial'; x.fillText('TILTSPHERE', 80, 150);
+                x.fillStyle = accent; x.font = 'bold 40px Arial'; x.fillText(o.kicker, 84, 230);
+                x.fillStyle = '#ffffff'; x.font = 'bold 190px Arial'; x.fillText(o.big, 76, 450);
+                x.fillStyle = '#cbd5e0'; x.font = 'bold 54px Arial'; x.fillText(o.sub, 84, 540);
+                let y = 650; (o.stats || []).forEach(st => { this.drawIcon(x, st.icon, 106, y - 16, 56, st.color || '#ffd700', 2); x.fillStyle = '#fff'; x.font = 'bold 48px Arial'; x.fillText(st.text, 160, y); y += 80; });
+                x.fillStyle = 'rgba(255,255,255,0.9)'; x.font = 'bold 46px Arial'; x.fillText(o.cta || 'Can you beat me?', 80, 1000);
+                x.fillStyle = 'rgba(255,255,255,0.55)'; x.font = '32px Arial'; x.fillText('funnel-game.vercel.app', 80, 1044);
+                c.toBlob(b => resolve(b), 'image/png');
+            } catch(e) { resolve(null); }
+        });
+    }
+
+    async prepareDailyCard() {
+        const best = this.getDailyBest(); if (!best) return;
+        const streak = this.getStreak(), key = `d|${this.getDailyDateString()}|${best.level}|${best.score}|${streak}`;
+        if (this._dailyCard && this._dailyCard.key === key) return;
+        const blob = await this.makeShareCard({ kicker: 'DAILY CHALLENGE  ' + this.getDailyDateString(), big: `Level ${best.level}`, sub: `${best.score.toLocaleString('en-US')} points`,
+            stats: streak > 0 ? [{ icon: 'flame', text: `${streak} day streak`, color: '#fbd38d' }] : [], cta: 'Same layout for everyone. Beat me?' });
+        this._dailyCard = { key, blob };
+    }
+
+    async prepareChallengeCard(lvl, t) {
+        const key = `c|${lvl}|${t}`; if (this._chalCard && this._chalCard.key === key) return;
+        const blob = await this.makeShareCard({ kicker: 'FRIEND CHALLENGE', big: `Level ${lvl}`, sub: `cleared in ${t.toFixed(1)} seconds`, accent: '#ffd700',
+            stats: [{ icon: 'clock', text: `${t.toFixed(1)}s to beat`, color: '#ffd700' }], cta: 'Think you can beat my time?' });
+        this._chalCard = { key, blob };
+    }
+
+    async shareWithCard(text, url, card) {
+        try {
+            const blob = card && card.blob;
+            if (blob && typeof File !== 'undefined' && navigator.canShare) {
+                const file = new File([blob], 'tiltsphere.png', { type: 'image/png' });
+                if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: text + '\n' + url }); return; }
+            }
+        } catch(e) { if (e && e.name === 'AbortError') return; }
+        return this.shareText(text, url);
     }
 
     async shareText(text, url) {
@@ -2589,7 +2963,9 @@ class TiltBallGame {
         if (!best) { this.showNotification('Nothing to share yet', 'Clear a level in today\'s Daily Challenge first', 2500); return; }
         const streak = this.getStreak();
         const text = `TiltSphere Daily ${this.getDailyDateString()}\nCleared ${best.level} ${best.level === 1 ? 'level' : 'levels'}, ${best.score} points` + (streak > 1 ? `\n${streak} day streak` : '') + `\nSame layout for everyone. Can you beat me?`;
-        this.shareText(text, SITE_URL);
+        const key = `d|${this.getDailyDateString()}|${best.level}|${best.score}|${streak}`;
+        this.shareWithCard(text, SITE_URL, this._dailyCard && this._dailyCard.key === key ? this._dailyCard : null);
+        this.prepareDailyCard();
     }
 
     shareChallenge() {
@@ -2600,7 +2976,9 @@ class TiltBallGame {
         }
         if (!lvl) { this.showNotification('Clear a level first', 'Then you can challenge a friend to beat your time', 2800); return; }
         const t = this.bestTimes[lvl];
-        this.shareText(`I cleared TiltSphere level ${lvl} in ${t.toFixed(1)}s. Think you can beat it?`, `${SITE_URL}?lvl=${lvl}&t=${t}`);
+        const card = this._chalCard && this._chalCard.key === `c|${lvl}|${t}` ? this._chalCard : null;
+        this.shareWithCard(`I cleared TiltSphere level ${lvl} in ${t.toFixed(1)}s. Think you can beat it?`, `${SITE_URL}?lvl=${lvl}&t=${t}`, card);
+        this.prepareChallengeCard(lvl, t);
     }
 
     checkIncomingChallenge() {
