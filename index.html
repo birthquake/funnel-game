@@ -393,6 +393,17 @@
     </div>
 </div>
 
+<div id="welcomeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:150;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #4fd1c7;border-radius:15px;padding:22px;width:90%;max-width:300px;color:#fff;text-align:center">
+        <h3 style="color:#4fd1c7;margin-bottom:8px">Welcome back!</h3>
+        <p id="welcomeMsg" style="font-size:13px;opacity:.9;margin-bottom:8px;line-height:1.4"></p>
+        <p id="welcomeStreak" style="font-size:12px;color:#fbd38d;margin-bottom:14px;line-height:1.4"></p>
+        <button id="welcomeContinue" onclick="game.welcomeContinue()" style="display:block;width:100%;background:linear-gradient(45deg,#4fd1c7,#68d391);color:#000;border:none;padding:11px;border-radius:8px;cursor:pointer;font-weight:bold;margin-bottom:8px"></button>
+        <button id="welcomeDaily" onclick="game.welcomeDaily()" style="display:block;width:100%;background:transparent;color:#68d391;border:1px solid #68d391;padding:10px;border-radius:8px;cursor:pointer;font-weight:bold;margin-bottom:8px">Daily Challenge</button>
+        <button onclick="game.closeWelcome()" style="background:none;border:none;color:#a0aec0;cursor:pointer;padding:6px;font-size:12px">Not now</button>
+    </div>
+</div>
+
 <div id="askModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center">
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:22px;width:90%;max-width:300px;color:#fff;text-align:center">
         <h3 id="askTitle" style="color:#63b3ed;margin-bottom:10px"></h3>
@@ -590,7 +601,8 @@ class TiltBallGame {
         this.setupEventListeners();
         this.setupAutoPause();
         this.showTitle();
-        this.checkIncomingChallenge();
+        if (!this.checkIncomingChallenge()) this.maybeShowWelcome();
+        this.watchPresence();
 
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', (e) => {
@@ -2766,15 +2778,52 @@ class TiltBallGame {
         this.shareText(`I cleared TiltSphere level ${lvl} in ${t.toFixed(1)}s. Think you can beat it?`, `${SITE_URL}?lvl=${lvl}&t=${t}`);
     }
 
+    // ---- Welcome back: when the player returns after a break ----
+    touchSeen() { try { localStorage.setItem('tiltSphereLastSeen', String(Date.now())); } catch(e) {} }
+
+    watchPresence() {
+        this.touchSeen();
+        setInterval(() => { if (!document.hidden) this.touchSeen(); }, 60000);
+        document.addEventListener('visibilitychange', () => this.touchSeen());
+        window.addEventListener('pagehide', () => this.touchSeen());
+    }
+
+    maybeShowWelcome() {
+        let last = 0;
+        try { last = parseInt(localStorage.getItem('tiltSphereLastSeen') || '0', 10) || 0; } catch(e) {}
+        const away = Date.now() - last, HOURS = 3600000;
+        const hasProgress = this.level > 1 || this.maxLevel > 1;
+        if (!last || away < 3 * HOURS || !hasProgress || this.gameRunning) return false;
+        const days = Math.floor(away / (24 * HOURS)), hrs = Math.floor(away / HOURS);
+        const gone = days >= 1 ? `${days} ${days === 1 ? 'day' : 'days'}` : `${hrs} hours`;
+        document.getElementById('welcomeMsg').textContent = `It's been ${gone}. Level ${this.level} is ready when you are, and your progress is saved.`;
+        const today = this.getDailyDateString(), streak = this.getStreak();
+        let playedToday = false; try { playedToday = !!JSON.parse(localStorage.getItem('tiltSphereDailyScores') || '{}')[today]; } catch(e) {}
+        const st = document.getElementById('welcomeStreak'), daily = document.getElementById('welcomeDaily');
+        if (playedToday) { st.textContent = ''; daily.style.display = 'none'; }
+        else {
+            daily.style.display = 'block';
+            st.textContent = streak > 0 ? `Play today's Daily Challenge to keep your ${streak} day streak.` : "Today's Daily Challenge is ready.";
+        }
+        document.getElementById('welcomeContinue').textContent = `Continue - Level ${this.level}`;
+        document.getElementById('welcomeModal').style.display = 'flex';
+        return true;
+    }
+
+    closeWelcome() { document.getElementById('welcomeModal').style.display = 'none'; }
+    welcomeContinue() { this.closeWelcome(); this.onPlay(); }
+    welcomeDaily() { this.closeWelcome(); this.startDailyChallenge(); }
+
     checkIncomingChallenge() {
         let lvl = 0, t = 0;
         try {
             const q = new URLSearchParams(location.search);
             lvl = parseInt(q.get('lvl'), 10); t = parseFloat(q.get('t'));
             if (q.has('lvl') || q.has('t')) history.replaceState(null, '', location.pathname);
-        } catch(e) { return; }
-        if (!(lvl >= 1 && lvl <= this.levelConfigs.length) || !(t > 0 && t < 600)) return;
+        } catch(e) { return false; }
+        if (!(lvl >= 1 && lvl <= this.levelConfigs.length) || !(t > 0 && t < 600)) return false;
         this.ask('Friend challenge', `A friend cleared level ${lvl} in ${t.toFixed(1)}s. Can you beat it?`, () => this.startFriendChallenge(lvl, t), 'Play', 'Not now');
+        return true;
     }
 
     startFriendChallenge(lvl, t) {
