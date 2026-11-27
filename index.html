@@ -550,6 +550,9 @@ class TiltBallGame {
         this.levelIntroActive    = false;
         this.levelIntroTotal     = 120;
         this.levelIntroQuick     = false;
+        this.levelIntroWaiting   = false;
+        this.levelIntroHeld      = 0;
+        this.levelIntroMinHold   = 40;
         this.levelIntroLevel     = 1;
 
         this.time = 0;
@@ -681,7 +684,11 @@ class TiltBallGame {
         const key = this.modeLevelKey();
         this.levelIntroQuick = (key === this._lastIntroKey) && unseen.length === 0;
         this._lastIntroKey = key;
-        this.levelIntroTotal = this.levelIntroQuick ? 50 : (unseen.length ? 300 : 170);
+        this.levelIntroTotal = this.levelIntroQuick ? 50 : 100;
+        // First visits and new mechanics wait for a tap; quick retries start by themselves.
+        this.levelIntroWaiting = !this.levelIntroQuick;
+        this.levelIntroHeld = 0;
+        this.levelIntroMinHold = unseen.length ? 70 : 40;
         unseen.forEach(k => { this.seen[k] = true; });
         this.levelNewFeatures = unseen;
         if (unseen.length) { try { localStorage.setItem('tiltSphereSeen', JSON.stringify(this.seen)); } catch(e) {} }
@@ -689,9 +696,9 @@ class TiltBallGame {
 
     skipIntro() {
         // Tap to start: allowed once the player has had a moment to see the screen.
-        if (!this.levelIntroActive || this.levelIntroQuick) return;
-        const t = this.levelIntroProgress * this.levelIntroTotal;
-        if (t < 45) return;
+        if (!this.levelIntroActive || !this.levelIntroWaiting) return;
+        if (this.levelIntroHeld < this.levelIntroMinHold) return;   // ignore stray taps right as it appears
+        this.levelIntroWaiting = false;
         this.levelIntroProgress = Math.max(this.levelIntroProgress, 1 - 14 / this.levelIntroTotal);
     }
 
@@ -1293,7 +1300,13 @@ class TiltBallGame {
         if (!this.gameRunning || this.gamePaused || this.levelCompleting) return;
 
         if (this.levelIntroActive) {
-            this.levelIntroProgress += 1 / (this.levelIntroTotal || 120);
+            const total = this.levelIntroTotal || 120;
+            if (this.levelIntroWaiting && this.levelIntroProgress * total >= 14) {
+                this.levelIntroProgress = 14 / total;   // hold here until the player taps
+                this.levelIntroHeld++;
+                return;
+            }
+            this.levelIntroProgress += 1 / total;
             if (this.levelIntroProgress >= 1) {
                 this.levelIntroActive   = false;
                 this.levelIntroProgress = 0;
@@ -1634,8 +1647,8 @@ class TiltBallGame {
             const bt = this.gameMode === 'normal' ? this.bestTimes[this.levelIntroLevel] : undefined;
             if (bt !== undefined) add(`Your best: ${bt.toFixed(1)}s`, 'bold 12px Arial', '#ffd700', 18);
         }
-        const hint = !quick && T > 45;
-        const sumH = () => rows.reduce((a, r) => a + (r.gap || r.h), 0) + 36 + (hint ? 20 : 0);
+        const hint = this.levelIntroWaiting && this.levelIntroHeld >= this.levelIntroMinHold;
+        const sumH = () => rows.reduce((a, r) => a + (r.gap || r.h), 0) + 36 + (this.levelIntroWaiting ? 22 : 0);
         if (sumH() > this.H - 16) { const i = rows.findIndex(r => r.t === ml && ml); if (i > -1) rows.splice(i, 1); }
         const PH = sumH(), px = -PW / 2, py = -PH / 2;
 
@@ -1668,7 +1681,7 @@ class TiltBallGame {
             y += row.h;
         }
         ctx.shadowBlur = 0;
-        if (hint) { ctx.font = '11px Arial'; ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillText('Tap to start', 0, py + PH - 16); }
+        if (hint) { ctx.font = 'bold 13px Arial'; ctx.fillStyle = `rgba(255,255,255,${0.55 + 0.4 * Math.abs(Math.sin(this.levelIntroHeld / 18))})`; ctx.fillText('TAP TO START', 0, py + PH - 17); }
         ctx.restore();
     }
 
