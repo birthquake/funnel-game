@@ -1330,7 +1330,7 @@ class TiltBallGame {
     handleOrientation(e) {
         this._rawBeta = e.beta || 0; this._rawGamma = e.gamma || 0;
         if (this._autoCalib) { this.calibrate(true); this._autoCalib = false; }
-        if (!this.gameRunning || this.gamePaused) return;
+        if (!this.gameRunning || this.gamePaused || this.levelIntroActive) return;   // tilt does nothing until play starts
         const cfg   = this.getCurrentConfig();
         const s     = (this.settings.sensitivity/100) * this.sensitivity * cfg.ballSpeed;
         const gamma = (e.gamma||0) - this.tiltOffsetGamma;
@@ -1347,6 +1347,14 @@ class TiltBallGame {
             if (!this.gameRunning) return;
             if (this.gamePaused) this.resumeGame(); else this.pauseGame();
         }
+    }
+
+    // The moment play actually starts: treat the current phone angle as flat, start at rest, and give a short grace period.
+    beginPlay() {
+        this.calibrate(true);
+        this.ballVelX = 0; this.ballVelY = 0;
+        this.invuln = Math.max(this.invuln, 60);
+        this.scorePopups.push({ x: this.ballX + this.ballSize / 2, y: this.ballY - 12, text: 'GO', life: 40, maxLife: 40, color: '#68d391' });
     }
 
     stepEffects() {
@@ -1375,6 +1383,7 @@ class TiltBallGame {
             if (this.levelIntroProgress >= 1) {
                 this.levelIntroActive   = false;
                 this.levelIntroProgress = 0;
+                this.beginPlay();
             }
             return;
         }
