@@ -1,5 +1,5 @@
 // Offline cache for TiltSphere. Bump CACHE when index.html changes so players get the update.
-const CACHE = 'tiltsphere-v7';
+const CACHE = 'tiltsphere-v8';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './og-image.png'];
 
 self.addEventListener('install', e => {
