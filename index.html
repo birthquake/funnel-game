@@ -9,9 +9,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TiltSphere">
-    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="icon-192.png">
     <meta name="description" content="Tilt your phone to guide the ball into the target. 250 levels of increasingly devious challenges.">
     <style>
+        :root { --board: clamp(300px, min(94vw, 48vh), 520px); }
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         html { height: 100%; overflow: hidden; }
@@ -85,7 +88,7 @@
 
         .game-container {
             position: relative;
-            width: 350px; height: 350px;
+            width: var(--board); height: var(--board);
             border: 3px solid #63b3ed;
             border-radius: 20px;
             box-shadow: 0 0 30px rgba(99,179,237,.4), inset 0 0 30px rgba(99,179,237,.1);
@@ -94,7 +97,7 @@
 
         canvas {
             display: block;
-            width: 350px; height: 350px;
+            width: 100%; height: 100%;
             border-radius: 17px;
         }
 
@@ -132,7 +135,7 @@
 
         .controls {
             text-align: center; margin-top: 15px;
-            font-size: 12px; max-width: 350px; z-index: 50;
+            font-size: 12px; max-width: var(--board); z-index: 50;
         }
 
         .start-button, .menu-button {
@@ -192,6 +195,20 @@
         }
         .emergency-center.show   { opacity: 1; pointer-events: all; }
         .emergency-center:active { background: rgba(245,101,101,0.35); }
+
+        .time-bar { width: 200px; height: 6px; background: #333; border-radius: 3px; margin: 0 auto 6px; overflow: hidden; }
+        .time-fill { height: 100%; width: 100%; background: #68d391; transition: width 1s linear, background .3s; }
+        #livesHearts { letter-spacing: 1px; }
+
+        @keyframes modalIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+        #leaderboardModal, #gameOverModal, #skinModal, #dailyModal, #settingsModal, #askModal, #levelModal, #menuSheet { animation: modalIn .25s ease; }
+        @keyframes boardIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+        .game-container.boardIn { animation: boardIn .4s ease; }
+        .sheet-btn { display: block; width: 100%; margin: 6px 0; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; background: linear-gradient(45deg, #4a5568, #63b3ed); color: #fff; }
+        .sheet-btn.danger { background: linear-gradient(45deg, #742a2a, #f56565); }
+        .level-cell { padding: 8px 0 6px; border-radius: 8px; font-size: 12px; font-weight: bold; text-align: center; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.05); color: #fff; cursor: pointer; }
+        .level-cell small { display: block; font-size: 9px; color: #ffd700; letter-spacing: 1px; min-height: 11px; }
+        .level-cell.locked { opacity: .3; cursor: default; }
     </style>
 </head>
 <body>
@@ -208,9 +225,10 @@
         <div class="stat-item">Level: <span id="level">1</span><span id="difficultyBadge" class="difficulty-badge difficulty-easy">EASY</span></div>
         <div class="stat-item">Score: <span id="score">0</span></div>
         <div class="stat-item">Best: <span id="bestScore">0</span></div>
-        <div class="stat-item" id="livesDisplay">❤️ <span id="livesCount">3</span></div>
+        <div class="stat-item" id="livesDisplay"><span id="livesHearts">❤️❤️❤️</span><span id="livesCount" style="display:none">3</span></div>
         <div class="stat-item" id="timerDisplay">⏱ <span id="timerCount">--</span></div>
     </div>
+    <div class="time-bar"><div class="time-fill" id="timeFill"></div></div>
     <div class="progress-meter"><div class="progress-fill" id="progressFill"></div></div>
     <div style="font-size:10px">Progress: <span id="progressLevel">0%</span> • <span id="achievementCount">0</span> achievements</div>
 </div>
@@ -234,20 +252,42 @@
 
 <div class="controls">
     <button class="start-button" id="startButton">START GAME</button>
+    <button class="menu-button" id="levelsButton" onclick="game.showLevelSelect()">Levels</button>
     <div class="menu-buttons" id="menuButtons" style="display:none">
-        <button class="menu-button" onclick="game.pauseGame()">Pause</button>
-        <button class="menu-button" onclick="game.saveGame()">Save</button>
-        <button class="menu-button" onclick="game.showSettings()">Settings</button>
-        <button class="menu-button" onclick="game.resetProgress()">Reset</button>
-        <button class="menu-button" id="skipButton" onclick="game.skipLevel()" style="display:none">Skip Level</button>
-        <button class="menu-button" onclick="game.showLeaderboard()">Scores</button>
-        <button class="menu-button" onclick="game.showSkinPicker()">Skins</button>
-        <button class="menu-button" onclick="game.startDailyChallenge()">Daily</button>
-        <button class="menu-button" onclick="game.startEndlessMode()">Endless</button>
+        <button class="menu-button" onclick="game.pauseGame()">⏸ Pause</button>
+        <button class="menu-button" onclick="game.openMenu()">☰ Menu</button>
     </div>
     <div>Tilt your device to guide the ball into the target</div>
-    <div class="skip-level-hint" id="skipLevelHint">Having trouble? Skip available after 10 attempts</div>
+    <div class="skip-level-hint" id="skipLevelHint">Having trouble? You can skip this level from ☰ Menu</div>
     <div style="margin-top:5px;font-size:10px" id="saveStatus"></div>
+</div>
+
+<div id="fadeLayer" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;z-index:250"></div>
+
+<div id="menuSheet" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:18px;width:90%;max-width:300px;max-height:90vh;overflow-y:auto;color:#fff">
+        <h3 style="text-align:center;color:#63b3ed;margin-bottom:8px">Menu</h3>
+        <button class="sheet-btn" style="background:linear-gradient(45deg,#2f855a,#68d391)" onclick="game.closeMenu()">▶ Resume</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showLevelSelect())">🗺️ Levels</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.startDailyChallenge())">📅 Daily Challenge</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.startEndlessMode())">♾️ Endless Mode</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showSkinPicker())">🎨 Skins</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showLeaderboard())">🏆 Scores</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.showSettings())">⚙️ Settings</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.calibrate())">🎯 Calibrate tilt</button>
+        <button class="sheet-btn" onclick="game.menuDo(()=>game.saveGame(true))">💾 Save</button>
+        <button class="sheet-btn" id="skipButton" style="display:none" onclick="game.menuDo(()=>game.skipLevel())">⏭ Skip level</button>
+        <button class="sheet-btn danger" onclick="game.menuDo(()=>game.resetProgress())">Reset progress</button>
+    </div>
+</div>
+
+<div id="levelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #ffd700;border-radius:15px;padding:18px;width:92%;max-width:330px;max-height:88vh;display:flex;flex-direction:column;color:#fff;text-align:center">
+        <h3 style="color:#ffd700;margin-bottom:4px">🗺️ Levels</h3>
+        <p id="levelStarTotal" style="font-size:11px;opacity:.7;margin-bottom:10px"></p>
+        <div id="levelGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;overflow-y:auto;margin-bottom:12px;padding:2px"></div>
+        <button onclick="game.closeLevelSelect()" style="background:#ffd700;color:#000;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;font-weight:bold">Close</button>
+    </div>
 </div>
 
 <div id="leaderboardModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center">
@@ -294,6 +334,17 @@
     </div>
 </div>
 
+<div id="askModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center">
+    <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:22px;width:90%;max-width:300px;color:#fff;text-align:center">
+        <h3 id="askTitle" style="color:#63b3ed;margin-bottom:10px"></h3>
+        <p id="askMsg" style="font-size:13px;opacity:.85;margin-bottom:18px;line-height:1.4"></p>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button id="askYes" style="background:#68d391;color:#000;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:bold"></button>
+            <button id="askNo" style="background:#4a5568;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer"></button>
+        </div>
+    </div>
+</div>
+
 <div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center">
     <div style="background:linear-gradient(135deg,#1a202c,#2d3748);border:2px solid #63b3ed;border-radius:15px;padding:20px;width:90%;max-width:300px;color:#fff">
         <h3 style="text-align:center;margin-bottom:20px;color:#63b3ed">Settings</h3>
@@ -309,6 +360,15 @@
         </div>
         <div style="margin-bottom:15px">
             <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="trailToggle" checked><span>Ball Trail</span></label>
+        </div>
+        <div style="margin-bottom:15px">
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="musicToggle" checked><span>Music</span></label>
+        </div>
+        <div style="margin-bottom:15px">
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="colourblindToggle"><span>High-contrast shapes (moving = dashed)</span></label>
+        </div>
+        <div style="margin-bottom:15px">
+            <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="assistToggle" checked><span>Assist after repeated fails</span></label>
         </div>
         <div style="margin-bottom:20px">
             <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="autoPauseToggle" checked><span>Auto-pause when window loses focus</span></label>
@@ -396,7 +456,7 @@ class TiltBallGame {
 
         this.achievements = JSON.parse(localStorage.getItem('tiltSphereAchievements') || '[]');
 
-        this.settings = { sound:true, haptic:true, trail:true, sensitivity:50, autoPause:true };
+        this.settings = { sound:true, haptic:true, trail:true, sensitivity:50, autoPause:true, music:true, colourblind:false, assist:true };
         try {
             const s = localStorage.getItem('tiltSphereSettings');
             if (s) this.settings = { ...this.settings, ...JSON.parse(s) };
@@ -413,10 +473,30 @@ class TiltBallGame {
         this.levelIntroLevel     = 1;
 
         this.time = 0;
+        this._rng = null;
+        this._bounceMul = 1;
+        this._accum = 0;
+        this._lastFrame = 0;
+        this._listenersAttached = false;
+
+        this.tick = 0;
+        this.invuln = 0;
+        this.freezeTicks = 0; this.slowTicks = 0; this.timerFreeze = 0; this.mvScale = 1;
+        this.shieldActive = false;
+        this.powerups = [];
+        this.squashAmt = 0;
+        this.funnelDrift = null;
+        this.failCounts = {};
+        this.timeLimit = 30;
+        this.maxLevel = 1;
+        this._rawBeta = 0; this._rawGamma = 0; this._autoCalib = false;
+        this._musicTimer = null; this._musicStep = 0;
+        try { this.stars = JSON.parse(localStorage.getItem('tiltSphereStars') || '{}'); } catch(e) { this.stars = {}; }
 
         this.levelConfigs = this.generateLevelConfigs();
 
         this.loadGame();
+        this.maxLevel = Math.max(this.maxLevel, this.level);
         this.setupLevel();
         this.updateUI();
         this.setupEventListeners();
@@ -430,6 +510,197 @@ class TiltBallGame {
 
         this.setupOrientationLock();
         this.renderLoop();
+    }
+
+    modeLevelKey() { return `${this.gameMode}:${this.gameMode === 'endless' ? this.endlessLevel : this.level}`; }
+    assistScale() { return (this.settings.assist && (this.failCounts[this.modeLevelKey()] || 0) >= 2) ? 0.75 : 1; }
+    hazardLives() { return ['expert','legendary','master','grandmaster','ultimate'].includes(this.getCurrentConfig().difficulty); }
+
+    renderHearts() {
+        const total = Math.max(3, this.lives);
+        let h = '';
+        for (let i = 0; i < total; i++) h += i < this.lives ? '❤️' : '🖤';
+        document.getElementById('livesHearts').textContent = h;
+        document.getElementById('livesCount').textContent  = this.lives;
+    }
+
+    fadeThen(cb) {
+        const f = document.getElementById('fadeLayer');
+        const live = this.gameRunning && !this.gamePaused;
+        if (live) this.gamePaused = true;
+        f.style.opacity = 1;
+        setTimeout(() => {
+            cb();
+            if (live && this.gameRunning) this.gamePaused = false;
+            f.style.opacity = 0;
+        }, 260);
+    }
+
+    openMenu() {
+        if (!this.gameRunning) return;
+        this._menuWasLive = !this.gamePaused;
+        if (this._menuWasLive) this.gamePaused = true;
+        document.getElementById('menuSheet').style.display = 'flex';
+    }
+    closeMenu() {
+        document.getElementById('menuSheet').style.display = 'none';
+        if (this._menuWasLive) this.gamePaused = false;
+        this._menuWasLive = false;
+    }
+    menuDo(fn) { this.closeMenu(); fn(); }
+
+    calibrate(silent=false) {
+        this.tiltOffsetBeta  = this._rawBeta;
+        this.tiltOffsetGamma = this._rawGamma;
+        if (!silent) this.showNotification('🎯 Calibrated', 'Your current phone angle is now "flat"', 2200);
+    }
+
+    recordStars(level, stars) {
+        if ((this.stars[level] || 0) >= stars) return;
+        this.stars[level] = stars;
+        try { localStorage.setItem('tiltSphereStars', JSON.stringify(this.stars)); } catch(e) {}
+    }
+
+    showLevelSelect() {
+        const grid = document.getElementById('levelGrid');
+        const tierCol = n => n <= 20 ? '#68d391' : n <= 40 ? '#f6ad55' : n <= 60 ? '#f56565' : n <= 80 ? '#9f7aea' : n <= 100 ? '#ffd700' : '#63b3ed';
+        let html = '', total = 0;
+        for (let n = 1; n <= this.levelConfigs.length; n++) {
+            const unlocked = n <= this.maxLevel;
+            const st = this.stars[n] || 0; total += st;
+            html += `<div class="level-cell ${unlocked ? '' : 'locked'}" style="border-color:${tierCol(n)}" ${unlocked ? `onclick="game.selectLevel(${n})"` : ''}>${unlocked ? n : '🔒'}<small>${unlocked ? ('<span>' + '★'.repeat(st) + '</span><span style="color:rgba(255,255,255,.2)">' + '★'.repeat(3 - st) + '</span>') : ''}</small></div>`;
+        }
+        grid.innerHTML = html;
+        document.getElementById('levelStarTotal').textContent = `★ ${total} / ${this.levelConfigs.length * 3} stars  ·  unlocked ${this.maxLevel} / ${this.levelConfigs.length}`;
+        document.getElementById('levelModal').style.display = 'flex';
+    }
+    closeLevelSelect() { document.getElementById('levelModal').style.display = 'none'; }
+
+    selectLevel(n) {
+        if (n > this.maxLevel) return;
+        this.closeLevelSelect();
+        const apply = () => {
+            this.gameMode = 'normal'; this._rng = null;
+            this.level = n; this.lives = 3; this.combo = 0; this.failCounts = {}; this.shieldActive = false;
+            this.setupLevel(); this.updateUI();
+            if (this.gameRunning) this.saveGame();
+        };
+        if (!this.gameRunning) { apply(); this.requestPermission(); }
+        else this.fadeThen(apply);
+    }
+
+    spawnPowerup(cfg, fs) {
+        const lvl = this.gameMode === 'endless' ? this.endlessLevel + 4 : this.level;
+        if (lvl < 5 || this.rand() > 0.6) return;
+        const type = ['freeze','shield','slow'][Math.floor(this.rand() * 3)];
+        const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
+        for (let a = 0; a < 60; a++) {
+            const x = 30 + this.rand() * (this.W - 60), y = 30 + this.rand() * (this.H - 60);
+            if (Math.hypot(x - 175, y - 175) < 70) continue;
+            if (Math.hypot(x - fcx, y - fcy) < fs + 25) continue;
+            if (this.obstacles.some(o => Math.hypot(x - (o.x + o.w/2), y - (o.y + o.h/2)) < Math.max(o.w, o.h)/2 + (o.type === 'laser' ? o.laserLength/2 : 0) + 24 + (o.isMoving ? o.range * 0.5 : 0))) continue;
+            this.powerups.push({ x, y, type, phase: this.rand() * 6.28 });
+            return;
+        }
+    }
+
+    collectPowerup(p) {
+        const info = {
+            freeze: { label: '⏱ TIMER FROZEN', color: '#63b3ed' },
+            shield: { label: '🛡 SHIELD',       color: '#68d391' },
+            slow:   { label: '🐢 SLOW-MO',      color: '#f6ad55' }
+        }[p.type];
+        if (p.type === 'freeze') this.timerFreeze = 300;
+        if (p.type === 'shield') this.shieldActive = true;
+        if (p.type === 'slow')   this.slowTicks = 360;
+        this.scorePopups.push({ x: p.x, y: p.y - 12, text: info.label, life: 70, maxLife: 70, color: info.color });
+        this.spawnParticles(p.x, p.y, info.color, 14);
+        this._playTone(660, 'sine', 0.2, 0.18, 0.005, 1100);
+        if (this.settings.haptic && navigator.vibrate) navigator.vibrate(40);
+    }
+
+    startMusic() {
+        if (this._musicTimer) return;
+        this._musicTimer = setInterval(() => this._musicTick(), 420);
+    }
+    _musicTone(f, type, g, dur) {
+        try {
+            const c = this.audioCtx, now = c.currentTime, o = c.createOscillator(), gn = c.createGain();
+            o.type = type; o.frequency.setValueAtTime(f, now);
+            gn.gain.setValueAtTime(0, now); gn.gain.linearRampToValueAtTime(g, now + 0.05); gn.gain.exponentialRampToValueAtTime(0.001, now + dur);
+            o.connect(gn); gn.connect(c.destination); o.start(now); o.stop(now + dur + 0.05);
+        } catch(e) {}
+    }
+    _musicTick() {
+        if (!this.audioCtx || !this.settings.sound || !this.settings.music || !this.gameRunning || this.gamePaused || document.hidden) return;
+        const scale = [0,3,5,7,10,12,15,12,10,7,5,3];
+        const step = this._musicStep++;
+        this._musicTone(220 * Math.pow(2, scale[step % scale.length] / 12), 'triangle', 0.035, 0.9);
+        if (step % 4 === 0) this._musicTone((step % 8 === 0) ? 110 : 146.8, 'sine', 0.05, 1.6);
+    }
+
+    drawPowerups(ctx) {
+        const cols = { freeze:'#63b3ed', shield:'#68d391', slow:'#f6ad55' }, icons = { freeze:'⏱', shield:'🛡', slow:'🐢' };
+        this.powerups.forEach(p => {
+            const col = cols[p.type];
+            ctx.save();
+            ctx.translate(p.x, p.y + Math.sin(this.time * 3 + p.phase) * 2);
+            const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 17);
+            g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.globalAlpha = 0.55; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(15,20,35,.9)'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+            ctx.font = '11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+            ctx.fillText(icons[p.type], 0, 1);
+            ctx.restore();
+        });
+    }
+
+    drawEffects(ctx) {
+        const items = [];
+        if (this.shieldActive)     items.push('🛡 shield');
+        if (this.freezeTicks > 0)  items.push('❄ ' + Math.ceil(this.freezeTicks / 60) + 's');
+        if (this.slowTicks > 0)    items.push('🐢 ' + Math.ceil(this.slowTicks / 60) + 's');
+        if (this.timerFreeze > 0)  items.push('⏱ ' + Math.ceil(this.timerFreeze / 60) + 's');
+        if (this.assistScale() < 1) items.push('🤝 assist');
+        if (!items.length) return;
+        ctx.save(); ctx.font = 'bold 11px Arial'; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'left';
+        items.forEach((t, i) => ctx.fillText(t, 8, 16 + i * 14));
+        ctx.restore();
+    }
+
+    drawContrastMarks(ctx) {
+        ctx.save(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+        this.obstacles.forEach(o => {
+            const cx = o.x + o.w/2, cy = o.y + o.h/2;
+            ctx.setLineDash(o.isMoving ? [5, 4] : []); ctx.lineWidth = 2.5; ctx.beginPath();
+            if (o.type === 'circle') ctx.arc(cx, cy, o.w/2 + 2, 0, Math.PI*2);
+            else if (o.type === 'laser') {
+                const hl = o.laserLength / 2;
+                ctx.moveTo(cx + Math.cos(o.laserAngle)*hl, cy + Math.sin(o.laserAngle)*hl);
+                ctx.lineTo(cx - Math.cos(o.laserAngle)*hl, cy - Math.sin(o.laserAngle)*hl); ctx.lineWidth = 4;
+            } else if (o.type === 'spinner') {
+                ctx.arc(cx, cy, o.w*0.5 + 2, 0, Math.PI*2);
+                ctx.moveTo(cx - o.w*.3, cy - o.w*.3); ctx.lineTo(cx + o.w*.3, cy + o.w*.3);
+                ctx.moveTo(cx + o.w*.3, cy - o.w*.3); ctx.lineTo(cx - o.w*.3, cy + o.w*.3);
+            } else ctx.rect(o.x - 1.5, o.y - 1.5, o.w + 3, o.h + 3);
+            ctx.stroke();
+        });
+        const cfg = this.getCurrentConfig(), fs = Math.max(cfg.funnelSize, 30);
+        const cx = this.funnelX + fs/2, cy = this.funnelY + fs/2;
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(cx, cy, fs/2 + 4, 0, Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx - fs/2 - 8, cy); ctx.lineTo(cx - fs/2 + 4, cy); ctx.moveTo(cx + fs/2 - 4, cy); ctx.lineTo(cx + fs/2 + 8, cy);
+        ctx.moveTo(cx, cy - fs/2 - 8); ctx.lineTo(cx, cy - fs/2 + 4); ctx.moveTo(cx, cy + fs/2 - 4); ctx.lineTo(cx, cy + fs/2 + 8); ctx.stroke();
+        ctx.restore();
+    }
+
+    rand() { return (this.gameMode === 'daily' && this._rng) ? this._rng() : Math.random(); }
+
+    mechLabel(cfg) {
+        return ({ rotating:'SPINNERS', bouncy:'BOUNCY', maze:'MAZE', spiral:'ORBITING', chaos:'CHAOS', chaos_mode:'CHAOS',
+                  ultimate:'RELENTLESS', master_challenge:'LASERS', ultimate_precision:'PRECISION' })[cfg.specialMechanic] || '';
     }
 
     generateLevelConfigs() {
@@ -464,8 +735,8 @@ class TiltBallGame {
         const margin = Math.max(fs + 20, 30);
         let placed = false;
         for (let a = 0; a < 50; a++) {
-            this.funnelX = margin + Math.random() * (this.W - 2*margin - fs);
-            this.funnelY = margin + Math.random() * (this.H - 2*margin - fs);
+            this.funnelX = margin + this.rand() * (this.W - 2*margin - fs);
+            this.funnelY = margin + this.rand() * (this.H - 2*margin - fs);
             const cx = this.funnelX + fs/2, cy = this.funnelY + fs/2;
             if (Math.hypot(cx-165, cy-165) >= 120) { placed = true; break; }
         }
@@ -474,12 +745,18 @@ class TiltBallGame {
                 { x: this.W-fs-40, y: 40 }, { x: 40, y: this.H-fs-40 },
                 { x: this.W-fs-40, y: this.H-fs-40 }, { x: 40, y: 40 }
             ];
-            const f = fb[Math.floor(Math.random()*fb.length)];
+            const f = fb[Math.floor(this.rand()*fb.length)];
             this.funnelX = f.x; this.funnelY = f.y;
         }
 
         for (let i = 0; i < cfg.obstacles;       i++) this.spawnObstacle(false, cfg);
         for (let i = 0; i < cfg.movingObstacles; i++) this.spawnObstacle(true,  cfg);
+        if (cfg.specialMechanic === 'maze') this.addMazeWalls(fs);
+        this._bounceMul = cfg.specialMechanic === 'bouncy' ? 1.4 : 1;
+        this.powerups = []; this.freezeTicks = 0; this.slowTicks = 0; this.timerFreeze = 0; this.invuln = 0; this.mvScale = 1;
+        const amp = ['grandmaster','ultimate'].includes(cfg.difficulty) ? 40 : (cfg.difficulty === 'master' ? 25 : 0);
+        this.funnelDrift = amp ? { baseX: this.funnelX, baseY: this.funnelY, ax: amp, ay: amp * 0.8, speed: 0.6 + this.rand() * 0.4, phase: this.rand() * 6.28 } : null;
+        this.spawnPowerup(cfg, fs);
 
         this.ballX = 165; this.ballY = 165;
         this.ballVelX = 0; this.ballVelY = 0;
@@ -508,13 +785,14 @@ class TiltBallGame {
 
     spawnObstacle(isMoving, cfg) {
         const fs   = Math.max(cfg.funnelSize, 30);
-        const size = 20 + Math.random() * 15;
+        const mech = cfg.specialMechanic;
+        const size = 20 + this.rand() * 15;
         let x, y, valid = false;
 
         for (let a = 0; a < 100; a++) {
             const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
-            const pp  = Math.random();
-            const pv  = (Math.random()-.5) * 120;
+            const pp  = this.rand();
+            const pv  = (this.rand()-.5) * 120;
             const pa  = Math.atan2(fcy-165, fcx-165);
             const perp = pa + Math.PI/2;
             x = (165 + (fcx-165)*pp + Math.cos(perp)*pv);
@@ -539,34 +817,61 @@ class TiltBallGame {
         }
 
         if (!valid) {
-            x = 30 + Math.random() * (this.W - 60 - size);
-            y = 30 + Math.random() * (this.H - 60 - size);
+            x = 30 + this.rand() * (this.W - 60 - size);
+            y = 30 + this.rand() * (this.H - 60 - size);
         }
 
         const dirs      = ['x','y','diag'];
-        const dir       = dirs[Math.floor(Math.random()*3)];
-        const speed     = 0.3 + Math.random() * 0.5;
-        const range     = 40  + Math.random() * 60;
-        const phase     = Math.random() * Math.PI * 2;
+        const speedMul  = ['chaos','chaos_mode','ultimate','ultimate_precision'].includes(mech) ? 1.4 : 1;
+        const dir       = (mech === 'spiral' && isMoving) ? 'orbit' : dirs[Math.floor(this.rand()*3)];
+        const speed     = (0.3 + this.rand() * 0.5) * speedMul;
+        const range     = 40  + this.rand() * 60;
+        const phase     = this.rand() * Math.PI * 2;
 
         const lvl = this.level;
         let type = 'rect';
-        if (lvl >= 40 && Math.random() < 0.2)      type = 'laser';
-        else if (lvl >= 20 && Math.random() < 0.25) type = 'spinner';
-        else if (lvl >= 10 && Math.random() < 0.3)  type = 'circle';
+        if (lvl >= 40 && this.rand() < 0.2)      type = 'laser';
+        else if (lvl >= 20 && this.rand() < 0.25) type = 'spinner';
+        else if (lvl >= 10 && this.rand() < 0.3)  type = 'circle';
 
-        let laserAngle = Math.random() * Math.PI;
-        let laserLength = 50 + Math.random() * 60;
-        let laserSweepSpeed = (0.015 + Math.random() * 0.02) * (Math.random() < 0.5 ? 1 : -1);
+        if (mech === 'rotating' && type === 'rect' && this.rand() < 0.5) type = 'spinner';
+        if ((mech === 'chaos' || mech === 'chaos_mode') && this.rand() < 0.4) type = this.rand() < 0.5 ? 'laser' : 'spinner';
+        if ((mech === 'master_challenge' || mech === 'ultimate_precision') && this.rand() < 0.25) type = 'laser';
+
+        let laserAngle = this.rand() * Math.PI;
+        let laserLength = 50 + this.rand() * 60;
+        let laserSweepSpeed = (0.015 + this.rand() * 0.02) * (this.rand() < 0.5 ? 1 : -1);
 
         this.obstacles.push({
             x, y, w: size, h: size,
             isMoving, dir, speed, range, startX: x, startY: y, phase,
             type,
-            spinAngle: 0, spinSpeed: (0.02 + Math.random() * 0.03) * (Math.random() < 0.5 ? 1 : -1),
+            spinAngle: 0, spinSpeed: (0.02 + this.rand() * 0.03) * (this.rand() < 0.5 ? 1 : -1),
             laserAngle, laserLength, laserSweepSpeed,
-            hitThisLevel: false
+            hitThisLevel: false,
+            orbitCx: this.funnelX + fs/2, orbitCy: this.funnelY + fs/2, orbitR: 50 + range
         });
+    }
+
+    addMazeWalls(fs) {
+        const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
+        const n = 2 + Math.floor(this.rand() * 2);
+        for (let i = 0; i < n; i++) {
+            for (let a = 0; a < 40; a++) {
+                const horiz = this.rand() < 0.5;
+                const len = 90 + this.rand() * 50, th = 12;
+                const w = horiz ? len : th, h = horiz ? th : len;
+                const x = 20 + this.rand() * (this.W - 40 - w), y = 20 + this.rand() * (this.H - 40 - h);
+                const clearBall   = x > 165 + 40 || x + w < 165 - 20 || y > 165 + 40 || y + h < 165 - 20;
+                const clearFunnel = x > fcx + fs/2 + 25 || x + w < fcx - fs/2 - 25 || y > fcy + fs/2 + 25 || y + h < fcy - fs/2 - 25;
+                const clearOthers = this.obstacles.every(o => x > o.x + o.w + 10 || x + w < o.x - 10 || y > o.y + o.h + 10 || y + h < o.y - 10);
+                if (clearBall && clearFunnel && clearOthers) {
+                    this.obstacles.push({ x, y, w, h, isMoving:false, dir:'x', speed:0, range:0, startX:x, startY:y, phase:0, type:'rect',
+                        spinAngle:0, spinSpeed:0, laserAngle:0, laserLength:0, laserSweepSpeed:0, hitThisLevel:false });
+                    break;
+                }
+            }
+        }
     }
 
     setupEventListeners() {
@@ -725,6 +1030,11 @@ class TiltBallGame {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 const p = await DeviceOrientationEvent.requestPermission();
                 if (p === 'granted') this.startGame();
+                else {
+                    this.gyroAvailable = false;
+                    this.startGame();
+                    this.showNotification('Motion access denied', 'Using the on-screen joystick instead. To tilt, allow Motion & Orientation in Safari settings and reload.', 5000);
+                }
             } else { this.startGame(); }
         } catch(e) { this.startGame(); }
     }
@@ -734,10 +1044,16 @@ class TiltBallGame {
         this.gameRunning = true; this.gamePaused = false; this.levelCompleting = false;
         this.startButton.style.display = 'none';
         document.getElementById('menuButtons').style.display = 'flex';
-        window.addEventListener('deviceorientation', e => this.handleOrientation(e));
-        window.addEventListener('keydown', e => this.handleKeyboard(e));
-        this.lives = 3; this.combo = 0;
-        document.getElementById('livesCount').textContent = this.lives;
+        if (!this._listenersAttached) {
+            this._listenersAttached = true;
+            window.addEventListener('deviceorientation', e => this.handleOrientation(e));
+            window.addEventListener('keydown', e => this.handleKeyboard(e));
+        }
+        this.lives = 3; this.combo = 0; this.failCounts = {}; this.shieldActive = false; this._autoCalib = true;
+        this.renderHearts();
+        this.startMusic();
+        document.getElementById('levelsButton').style.display = 'none';
+        const gc = document.getElementById('gameContainer'); gc.classList.remove('boardIn'); void gc.offsetWidth; gc.classList.add('boardIn');
         this.joystickActive = !this.gyroAvailable;
         this.startTimer();
         this.levelIntroLevel    = this.level;
@@ -748,6 +1064,8 @@ class TiltBallGame {
     }
 
     handleOrientation(e) {
+        this._rawBeta = e.beta || 0; this._rawGamma = e.gamma || 0;
+        if (this._autoCalib) { this.calibrate(true); this._autoCalib = false; }
         if (!this.gameRunning || this.gamePaused) return;
         const cfg   = this.getCurrentConfig();
         const s     = (this.settings.sensitivity/100) * this.sensitivity * cfg.ballSpeed;
@@ -780,6 +1098,13 @@ class TiltBallGame {
         }
 
         this.time += 0.016;
+        this.tick++;
+        if (this.invuln > 0)      this.invuln--;
+        if (this.freezeTicks > 0) this.freezeTicks--;
+        if (this.slowTicks > 0)   this.slowTicks--;
+        if (this.timerFreeze > 0) this.timerFreeze--;
+        this.squashAmt *= 0.85; if (this.squashAmt < 0.01) this.squashAmt = 0;
+        this.mvScale = (this.freezeTicks > 0 ? 0 : (this.slowTicks > 0 ? 0.4 : 1)) * this.assistScale();
 
         if (this.joystickActive && this.joystickTouchId !== null) {
             const dx = this.joystickThumb.x - this.joystickBase.x;
@@ -806,16 +1131,19 @@ class TiltBallGame {
         if (this.ballX >= this.W-this.ballSize) { this.ballX = this.W-this.ballSize; this.ballVelX = -Math.abs(this.ballVelX)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
         if (this.ballY <= 0)                    { this.ballY = 0;                    this.ballVelY =  Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
         if (this.ballY >= this.H-this.ballSize) { this.ballY = this.H-this.ballSize; this.ballVelY = -Math.abs(this.ballVelY)*.7; this.spawnParticles(this.ballX, this.ballY, '#ff6b6b', 6); wallHit = true; }
-        if (wallHit) { this.shakeCanvas(); this.soundWallBounce(); }
+        if (wallHit) { this.shakeCanvas(); this.soundWallBounce(); this.squashAmt = 0.3; }
 
         this.obstacles.forEach(o => {
-            if (o.type === 'spinner') o.spinAngle += o.spinSpeed;
-            if (o.type === 'laser')   o.laserAngle += o.laserSweepSpeed;
+            if (o.type === 'spinner') o.spinAngle += o.spinSpeed * this.mvScale;
+            if (o.type === 'laser')   o.laserAngle += o.laserSweepSpeed * this.mvScale;
 
             if (!o.isMoving) return;
-            const t = this.time * o.speed * Math.PI * 2 / 3 + o.phase;
+            o.clock = (o.clock || 0) + 0.016 * this.mvScale;
+            const t = o.clock * o.speed * Math.PI * 2 / 3 + o.phase;
             if      (o.dir === 'x')  { o.x = o.startX + Math.sin(t) * o.range; }
             else if (o.dir === 'y')  { o.y = o.startY + Math.sin(t) * o.range; }
+            else if (o.dir === 'orbit') { o.x = o.orbitCx + Math.cos(t) * o.orbitR - o.w/2;
+                                          o.y = o.orbitCy + Math.sin(t) * o.orbitR - o.h/2; }
             else                     { o.x = o.startX + Math.sin(t) * o.range * .7;
                                        o.y = o.startY + Math.cos(t) * o.range * .7; }
             o.x = Math.max(5, Math.min(o.x, this.W - o.w - 5));
@@ -837,8 +1165,8 @@ class TiltBallGame {
                     this.ballX += nx * overlap;
                     this.ballY += ny * overlap;
                     const dot = this.ballVelX*nx + this.ballVelY*ny;
-                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65;
-                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65;
+                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65 * this._bounceMul;
+                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65 * this._bounceMul;
                 }
             } else if (o.type === 'laser') {
                 const cx = o.x + o.w/2, cy = o.y + o.h/2;
@@ -860,8 +1188,8 @@ class TiltBallGame {
                     this.ballX += nx * overlap;
                     this.ballY += ny * overlap;
                     const dot = this.ballVelX*nx + this.ballVelY*ny;
-                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65;
-                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65;
+                    this.ballVelX = (this.ballVelX - 2*dot*nx) * 0.65 * this._bounceMul;
+                    this.ballVelY = (this.ballVelY - 2*dot*ny) * 0.65 * this._bounceMul;
                 }
             } else {
                 if (this.ballX < o.x+o.w && this.ballX+this.ballSize > o.x &&
@@ -874,12 +1202,12 @@ class TiltBallGame {
                     const minOverlapX = Math.min(overlapLeft, overlapRight);
                     const minOverlapY = Math.min(overlapTop, overlapBottom);
                     if (minOverlapX < minOverlapY) {
-                        if (overlapLeft < overlapRight) { this.ballX = o.x + o.w; this.ballVelX = Math.abs(this.ballVelX) * 0.6; }
-                        else { this.ballX = o.x - this.ballSize; this.ballVelX = -Math.abs(this.ballVelX) * 0.6; }
+                        if (overlapLeft < overlapRight) { this.ballX = o.x + o.w; this.ballVelX = Math.abs(this.ballVelX) * 0.6 * this._bounceMul; }
+                        else { this.ballX = o.x - this.ballSize; this.ballVelX = -Math.abs(this.ballVelX) * 0.6 * this._bounceMul; }
                         this.ballVelY *= 0.85;
                     } else {
-                        if (overlapTop < overlapBottom) { this.ballY = o.y + o.h; this.ballVelY = Math.abs(this.ballVelY) * 0.6; }
-                        else { this.ballY = o.y - this.ballSize; this.ballVelY = -Math.abs(this.ballVelY) * 0.6; }
+                        if (overlapTop < overlapBottom) { this.ballY = o.y + o.h; this.ballVelY = Math.abs(this.ballVelY) * 0.6 * this._bounceMul; }
+                        else { this.ballY = o.y - this.ballSize; this.ballVelY = -Math.abs(this.ballVelY) * 0.6 * this._bounceMul; }
                         this.ballVelX *= 0.85;
                     }
                     this.ballVelX = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.ballVelX));
@@ -894,21 +1222,45 @@ class TiltBallGame {
                 this.shakeCanvas();
                 this.soundObstacleHit();
                 if (this.settings.haptic && navigator.vibrate) navigator.vibrate([30,10,30]);
-                this.levelAttempts++;
-                this.levelHitCount++;
-                this.combo = 0;
-                this.checkSkipLevelAvailability();
+                this.squashAmt = 0.32;
+                const lethal = o.type === 'laser' && this.hazardLives();
+                if (this.shieldActive && (!lethal || this.invuln <= 0)) {
+                    this.shieldActive = false; this.invuln = 45;
+                    this.scorePopups.push({ x: bcx, y: bcy - 14, text: '🛡 BLOCKED', life: 45, maxLife: 45, color: '#68d391' });
+                    this.spawnParticles(bcx, bcy, '#63b3ed', 14);
+                } else if (lethal) {
+                    if (this.invuln <= 0) { this.invuln = 90; this.loseLife('Zapped by a laser!'); }
+                } else {
+                    this.levelAttempts++;
+                    this.levelHitCount++;
+                    this.combo = 0;
+                    this.checkSkipLevelAvailability();
+                }
             }
         });
 
         if (!this.levelCompleting) {
+            const pcx = this.ballX + this.ballSize/2, pcy = this.ballY + this.ballSize/2;
+            for (let i = this.powerups.length - 1; i >= 0; i--) {
+                const pu = this.powerups[i];
+                if (Math.hypot(pcx - pu.x, pcy - pu.y) < this.ballSize/2 + 11) { this.collectPowerup(pu); this.powerups.splice(i, 1); }
+            }
             const cfg = this.getCurrentConfig();
             const fs  = Math.max(cfg.funnelSize, 30);
+            if (this.funnelDrift) {
+                const d = this.funnelDrift;
+                this.funnelX = Math.max(20, Math.min(this.W - fs - 20, d.baseX + Math.sin(this.time * d.speed + d.phase) * d.ax));
+                this.funnelY = Math.max(20, Math.min(this.H - fs - 20, d.baseY + Math.cos(this.time * d.speed * 0.8 + d.phase) * d.ay));
+            }
             const fcx = this.funnelX + fs/2, fcy = this.funnelY + fs/2;
             const bcx = this.ballX + this.ballSize/2, bcy = this.ballY + this.ballSize/2;
             const distToFunnel = Math.hypot(bcx-fcx, bcy-fcy);
 
             if (distToFunnel < fs/2 - 5) { this.levelComplete(); }
+            else if (distToFunnel < fs * 1.7) {
+                const k = 0.10 * (1 - (distToFunnel - fs/2) / (fs * 1.2));
+                if (k > 0) { this.ballVelX += (fcx - bcx) / distToFunnel * k; this.ballVelY += (fcy - bcy) / distToFunnel * k; }
+            }
 
             const nearZone = fs * 1.8;
             this.nearMissProximity = Math.max(0, 1 - (distToFunnel - fs/2) / nearZone);
@@ -978,10 +1330,15 @@ class TiltBallGame {
         }
     }
 
-    renderLoop() {
-        this.update();
+    renderLoop(ts) {
+        if (ts === undefined) ts = performance.now();
+        if (!this._lastFrame) this._lastFrame = ts;
+        this._accum += Math.min(ts - this._lastFrame, 100);
+        this._lastFrame = ts;
+        const STEP = 1000 / 60;
+        while (this._accum >= STEP) { this.update(); this._accum -= STEP; }
         this.draw();
-        requestAnimationFrame(() => this.renderLoop());
+        requestAnimationFrame(t => this.renderLoop(t));
     }
 
     draw() {
@@ -1006,11 +1363,14 @@ class TiltBallGame {
         this.drawTrail(ctx);
         this.drawFunnel(ctx);
         this.drawObstacles(ctx);
+        if (this.settings.colourblind) this.drawContrastMarks(ctx);
+        this.drawPowerups(ctx);
         this.drawParticles(ctx);
         this.drawShockwaves(ctx);
         this.drawBall(ctx);
         this.drawScorePopups(ctx);
 
+        if (this.gameRunning && !this.levelIntroActive) this.drawEffects(ctx);
         if (this.tutorialActive && this.gameRunning && !this.levelIntroActive) this.drawTutorial(ctx);
         if (this.joystickActive && this.gameRunning && !this.gamePaused && !this.levelIntroActive) this.drawJoystick(ctx);
         if (this.levelIntroActive) this.drawLevelIntro(ctx);
@@ -1021,7 +1381,7 @@ class TiltBallGame {
     drawLevelIntro(ctx) {
         const p = this.levelIntroProgress;
         let alpha, scale;
-        if (p < 0.3)      { alpha = p / 0.3; scale = 0.4 + (p / 0.3) * 0.6; }
+        if (p < 0.3)      { alpha = p / 0.3; scale = 0.4 + (p / 0.3) * 0.6 * this._bounceMul; }
         else if (p < 0.7) { alpha = 1; scale = 1; }
         else              { alpha = 1 - (p - 0.7) / 0.3; scale = 1 + (p - 0.7) * 0.5; }
 
@@ -1048,6 +1408,9 @@ class TiltBallGame {
 
         ctx.font = 'bold 13px Arial'; ctx.fillStyle = col; ctx.shadowBlur = 8;
         ctx.fillText(diff, 0, 20);
+        const ml = this.mechLabel(cfg);
+        if (ml) { ctx.font = 'bold 11px Arial'; ctx.fillText(ml, 0, 38); }
+        if (this.hazardLives() && (this.gameMode !== 'normal' || this.level >= 41)) { ctx.font = 'bold 10px Arial'; ctx.fillStyle = '#fc8181'; ctx.fillText('⚡ LASERS COST A LIFE', 0, ml ? 56 : 40); }
 
         ctx.shadowBlur = 0; ctx.strokeStyle = col; ctx.globalAlpha = alpha * 0.6; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(-80, 0); ctx.lineTo(-28, 0); ctx.stroke();
@@ -1237,8 +1600,22 @@ class TiltBallGame {
         const r  = this.ballSize/2 * (this._ballAnimScale ?? 1);
         if (r <= 0) return;
 
+        const fade = this._ballAnimOpacity ?? 1;
         ctx.save();
-        ctx.globalAlpha = this._ballAnimOpacity ?? 1;
+        const sg = ctx.createRadialGradient(cx + 3, cy + r + 2, 1, cx + 3, cy + r + 2, r * 1.2);
+        sg.addColorStop(0, `rgba(0,0,0,${0.35 * fade})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = sg;
+        ctx.beginPath(); ctx.ellipse(cx + 3, cy + r + 2, r * 1.1, r * 0.45, 0, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha = fade;
+        if (this.invuln > 0 && Math.floor(this.tick / 4) % 2 === 0) ctx.globalAlpha *= 0.45;
+        {
+            const spd = Math.hypot(this.ballVelX, this.ballVelY), ang = Math.atan2(this.ballVelY, this.ballVelX);
+            const st = 1 + Math.min(spd / this.maxVelocity, 1) * 0.18, sq = this.squashAmt || 0;
+            ctx.translate(cx, cy); ctx.rotate(ang); ctx.scale(st * (1 - sq), (1 / st) * (1 + sq * 0.6)); ctx.rotate(-ang); ctx.translate(-cx, -cy);
+        }
 
         const skinGlows = ['rgba(245,101,101,ALPHA)','rgba(99,179,237,ALPHA)','rgba(104,211,145,ALPHA)','rgba(255,215,0,ALPHA)','rgba(183,148,244,ALPHA)'];
         const glowBase = (skinGlows[this.activeSkin]||skinGlows[0]).replace('ALPHA','0.4');
@@ -1275,6 +1652,12 @@ class TiltBallGame {
             streak.addColorStop(0, streakCol); streak.addColorStop(1, streakFade);
             ctx.fillStyle = streak;
             ctx.beginPath(); ctx.arc(cx,cy,r*.8,0,Math.PI*2); ctx.fill();
+        }
+
+        if (this.shieldActive) {
+            ctx.strokeStyle = `rgba(99,179,237,${0.6 + Math.sin(this.time * 6) * 0.3})`; ctx.lineWidth = 2.5;
+            ctx.shadowColor = '#63b3ed'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(cx, cy, r + 5, 0, Math.PI*2); ctx.stroke();
         }
 
         ctx.restore();
@@ -1334,10 +1717,13 @@ class TiltBallGame {
         const mult  = this.levelHitCount === 0 ? (this.combo++, this.getComboMultiplier()) : (this.combo = 0, 1);
         const bonus = Math.round(this.level * 100 * mult);
         this.score += bonus;
+        const stars = 1 + (this.levelHitCount === 0 ? 1 : 0) + (this.timeLeft >= this.timeLimit * 0.5 ? 1 : 0);
         this.levelHitCount = 0;
+        if (this.gameMode === 'normal') this.recordStars(this.level, stars);
 
         const popColor = mult > 1 ? '#ffd700' : '#68d391';
         this.scorePopups.push({ x: fcx, y: fcy - 20, text: `+${bonus}`, life: 60, maxLife: 60, color: popColor });
+        this.scorePopups.push({ x: fcx, y: fcy + 28, text: '★'.repeat(stars) + '☆'.repeat(3 - stars), life: 60, maxLife: 60, color: '#ffd700' });
         this.showComboPopup(mult, fcx, fcy);
 
         if (this.score > this.bestScore) {
@@ -1347,12 +1733,13 @@ class TiltBallGame {
 
         if (this.settings.haptic && navigator.vibrate) navigator.vibrate([80,50,80,50,80,50,200]);
         this.soundLevelComplete();
-        this.checkAchievements();
 
         if (this.gameMode === 'daily')   this.saveDailyScore();
         if (this.gameMode === 'endless') { this.endlessLevel++; this.saveEndlessScore(); }
 
         this.level++;
+        if (this.gameMode === 'normal') this.maxLevel = Math.min(Math.max(this.maxLevel, this.level), this.levelConfigs.length);
+        this.checkAchievements();
 
         if (this.gameMode === 'normal' && this.level > this.levelConfigs.length) { this.endGame(); return; }
 
@@ -1368,7 +1755,7 @@ class TiltBallGame {
     animateBallIntoFunnel(fcx, fcy, callback) {
         this.ballVelX = 0; this.ballVelY = 0;
         const startTime = Date.now();
-        const duration  = 1000;
+        const duration  = 1300;
         const initR = Math.hypot(this.ballX+this.ballSize/2 - fcx, this.ballY+this.ballSize/2 - fcy);
 
         const animate = () => {
@@ -1393,9 +1780,10 @@ class TiltBallGame {
 
     endGame() {
         this.gameRunning = false; this.levelCompleting = false;
-        alert(`🎉 Congratulations!\n\nYou completed all ${this.levelConfigs.length} levels!\nFinal Score: ${this.score}\nBest Score: ${this.bestScore}\n\nYou are a TiltSphere Master!`);
+        this.stopTimer();
+        this.ask('🎉 Congratulations!', `You completed all ${this.levelConfigs.length} levels! Final score: ${this.score}. Best: ${this.bestScore}. You are a TiltSphere Master!`, null, 'Nice!');
         this.level = 1; this.score = 0;
-        this.startButton.style.display = 'block'; this.startButton.textContent = 'PLAY AGAIN';
+        this.startButton.style.display = 'block'; this.startButton.textContent = 'PLAY AGAIN'; document.getElementById('levelsButton').style.display = '';
         document.getElementById('menuButtons').style.display = 'none';
         this.setupLevel(); this.updateUI();
     }
@@ -1423,22 +1811,41 @@ class TiltBallGame {
 
     skipLevel() {
         if (this.levelAttempts < 10) return;
-        if (confirm("Skip this level? You won't get points for it.")) {
+        this.ask('Skip this level?', "You won't get points for it.", () => {
             this.level++;
-            if (this.level > this.levelConfigs.length) { this.endGame(); return; }
+            if (this.gameMode === 'normal' && this.level > this.levelConfigs.length) { this.endGame(); return; }
             this.saveGame(); this.updateUI(); this.setupLevel();
             this.showNotification('Level Skipped','No points awarded',2000);
-        }
+        }, 'Skip', 'Cancel');
+    }
+
+    ask(title, msg, onYes, yesLabel='OK', noLabel=null) {
+        const modal = document.getElementById('askModal');
+        const yes = document.getElementById('askYes'), no = document.getElementById('askNo');
+        document.getElementById('askTitle').textContent = title;
+        document.getElementById('askMsg').textContent   = msg;
+        yes.textContent = yesLabel;
+        no.textContent  = noLabel || '';
+        no.style.display = noLabel ? '' : 'none';
+        const wasLive = this.gameRunning && !this.gamePaused;
+        if (wasLive) this.gamePaused = true;
+        const close = () => { modal.style.display = 'none'; if (wasLive) this.gamePaused = false; };
+        yes.onclick = () => { close(); if (onYes) onYes(); };
+        no.onclick  = close;
+        modal.style.display = 'flex';
     }
 
     resetProgress() {
-        if (!confirm('Reset all progress? This cannot be undone.')) return;
-        try { ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings','tiltSphereScores'].forEach(k => localStorage.removeItem(k)); } catch(e) {}
-        this.level=1; this.score=0; this.bestScore=0; this.achievements=[]; this.lives=3; this.combo=0;
+        this.ask('Reset all progress?', 'This cannot be undone.', () => this.doReset(), 'Reset', 'Cancel');
+    }
+
+    doReset() {
+        try { ['tiltSphereSave','tiltSphereBest','tiltSphereAchievements','tiltSphereSettings','tiltSphereScores','tiltSphereStars'].forEach(k => localStorage.removeItem(k)); } catch(e) {}
+        this.level=1; this.maxLevel=1; this.stars={}; this.score=0; this.bestScore=0; this.achievements=[]; this.lives=3; this.combo=0;
         this.levelAttempts=0; this.gameRunning=false; this.levelCompleting=false;
         this.stopTimer();
-        this.settings={ sound:true,haptic:true,trail:true,sensitivity:50,autoPause:true };
-        this.startButton.style.display='block'; this.startButton.textContent='START GAME';
+        this.settings={ sound:true,haptic:true,trail:true,sensitivity:50,autoPause:true, music:true, colourblind:false, assist:true };
+        this.startButton.style.display='block'; this.startButton.textContent='START GAME'; document.getElementById('levelsButton').style.display='';
         document.getElementById('menuButtons').style.display='none';
         document.getElementById('skipLevelHint').classList.remove('show');
         document.getElementById('skipButton').style.display='none';
@@ -1446,9 +1853,13 @@ class TiltBallGame {
         document.getElementById('saveStatus').textContent='Progress reset';
     }
 
-    saveGame() {
+    saveGame(manual=false) {
+        if (this.gameMode !== 'normal') {
+            if (manual) this.showNotification('Save unavailable', 'Only the main campaign can be saved', 2000);
+            return;
+        }
         try {
-            localStorage.setItem('tiltSphereSave', JSON.stringify({ level:this.level, score:this.score, achievements:this.achievements, timestamp:Date.now(), version:'3.0' }));
+            localStorage.setItem('tiltSphereSave', JSON.stringify({ level:this.level, maxLevel:this.maxLevel, score:this.score, achievements:this.achievements, timestamp:Date.now(), version:'3.0' }));
             const ind = document.getElementById('saveIndicator');
             ind.classList.add('show');
             setTimeout(() => ind.classList.remove('show'), 2000);
@@ -1461,7 +1872,7 @@ class TiltBallGame {
             const raw = localStorage.getItem('tiltSphereSave');
             if (raw) {
                 const d = JSON.parse(raw);
-                this.level=d.level||1; this.score=d.score||0; this.achievements=d.achievements||[];
+                this.level=d.level||1; this.maxLevel=d.maxLevel||d.level||1; this.score=d.score||0; this.achievements=d.achievements||[];
                 document.getElementById('saveStatus').textContent = `Loaded: ${new Date(d.timestamp).toLocaleString()}`;
             }
         } catch(e) { document.getElementById('saveStatus').textContent = 'Failed to load save'; }
@@ -1470,10 +1881,11 @@ class TiltBallGame {
     checkAchievements() {
         const n = [];
         const push = name => { if (!this.achievements.includes(name)) { n.push(name); this.achievements.push(name); } };
-        if (this.level === 2) push('first_win');
-        [10,25,50,75,100,125,150,175,200,225,250].forEach(m => { if (this.level===m+1) push(`level_${m}`); });
+        const normal = this.gameMode === 'normal';
+        if (normal && this.level === 2) push('first_win');
+        if (normal) [10,25,50,75,100,125,150,175,200,225,250].forEach(m => { if (this.level===m+1) push(`level_${m}`); });
         [{l:21,n:'tier_easy'},{l:41,n:'tier_medium'},{l:61,n:'tier_hard'},{l:81,n:'tier_expert'},{l:101,n:'tier_legendary'},{l:151,n:'tier_master'},{l:201,n:'tier_grandmaster'},{l:251,n:'tier_ultimate'}]
-            .forEach(t => { if (this.level===t.l) push(t.n); });
+            .forEach(t => { if (normal && this.level===t.l) push(t.n); });
         [{s:5000,n:'score_5k'},{s:10000,n:'score_10k'},{s:25000,n:'score_25k'},{s:50000,n:'score_50k'},{s:100000,n:'score_100k'}]
             .forEach(a => { if (this.score>=a.s) push(a.n); });
         if (n.length) {
@@ -1537,7 +1949,7 @@ class TiltBallGame {
         document.getElementById('score').textContent            = this.score;
         document.getElementById('bestScore').textContent        = this.bestScore;
         document.getElementById('achievementCount').textContent = this.achievements.length;
-        document.getElementById('livesCount').textContent       = this.lives;
+        this.renderHearts();
         const pct = Math.min((this.level/this.levelConfigs.length)*100,100);
         document.getElementById('progressLevel').textContent = Math.round(pct)+'%';
         document.getElementById('progressFill').style.width  = pct+'%';
@@ -1556,6 +1968,9 @@ class TiltBallGame {
         document.getElementById('hapticToggle').checked         = this.settings.haptic;
         document.getElementById('trailToggle').checked          = this.settings.trail;
         document.getElementById('autoPauseToggle').checked      = this.settings.autoPause;
+        document.getElementById('musicToggle').checked          = this.settings.music;
+        document.getElementById('colourblindToggle').checked    = this.settings.colourblind;
+        document.getElementById('assistToggle').checked         = this.settings.assist;
         const sl = document.getElementById('sensitivitySlider');
         sl.oninput = () => document.getElementById('sensitivityValue').textContent = sl.value;
         document.getElementById('settingsModal').style.display = 'flex';
@@ -1567,11 +1982,12 @@ class TiltBallGame {
         this.stopTimer();
         const cfg = this.getCurrentConfig();
         const timeLimits = { easy:40, medium:35, hard:28, expert:22, legendary:18, master:16, grandmaster:15, ultimate:14 };
-        this.timeLeft = timeLimits[cfg.difficulty] || 30;
+        this.timeLimit = (timeLimits[cfg.difficulty] || 30) + (this.assistScale() < 1 ? 8 : 0);
+        this.timeLeft  = this.timeLimit;
         this.updateTimerUI();
         this.timerRunning = true;
         this._timerInterval = setInterval(() => {
-            if (!this.gameRunning || this.gamePaused || !this.timerRunning) return;
+            if (!this.gameRunning || this.gamePaused || !this.timerRunning || this.timerFreeze > 0) return;
             this.timeLeft--;
             this.updateTimerUI();
             if (this.timeLeft <= 0) { this.stopTimer(); this.loseLife("Time's up!"); }
@@ -1588,18 +2004,21 @@ class TiltBallGame {
         if (el) {
             el.textContent = this.timeLeft;
             el.style.color = this.timeLeft <= 5 ? '#f56565' : this.timeLeft <= 10 ? '#f6ad55' : '#fff';
+            const tf = document.getElementById('timeFill');
+            if (tf) { tf.style.width = Math.max(0, this.timeLeft / (this.timeLimit || 30) * 100) + '%'; tf.style.background = this.timeLeft <= 5 ? '#f56565' : this.timeLeft <= 10 ? '#f6ad55' : '#68d391'; }
         }
     }
 
     loseLife(reason) {
         this.lives = Math.max(0, this.lives - 1);
         this.combo = 0;
-        document.getElementById('livesCount').textContent = this.lives;
+        const fk = this.modeLevelKey(); this.failCounts[fk] = (this.failCounts[fk] || 0) + 1;
+        this.renderHearts();
         if (this.settings.haptic && navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
         this.spawnParticles(this.ballX+10, this.ballY+10, '#f56565', 20);
         if (this.lives <= 0) { this.triggerGameOver(reason); }
         else {
-            this.showNotification(`💔 Life lost! — ${reason}`, `${this.lives} ${this.lives===1?'life':'lives'} remaining`, 2500);
+            this.showNotification(`💔 Life lost! — ${reason}`, `${this.lives} ${this.lives===1?'life':'lives'} remaining` + (this.assistScale() < 1 ? ' • Assist on: slower obstacles, +8s' : ''), 3000);
             this.ballX = 165; this.ballY = 165; this.ballVelX = 0; this.ballVelY = 0;
             this.startTimer();
         }
@@ -1620,11 +2039,15 @@ class TiltBallGame {
     restartGame() {
         document.getElementById('gameOverModal').style.display = 'none';
         this.gameOverActive = false;
-        this.level = 1; this.score = 0; this.lives = 3; this.combo = 0;
-        this.setupLevel(); this.updateUI(); this.startTimer();
-        this.gameRunning = true;
-        this.levelIntroLevel = this.level; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
-        this.tutorialActive = (this.level === 1); this.tutorialProgress = 0;
+        this.fadeThen(() => {
+            this.level = 1; this.score = 0; this.lives = 3; this.combo = 0; this.failCounts = {}; this.shieldActive = false; this._autoCalib = true;
+            if (this.gameMode === 'daily') this._rng = this._seededRng(this.dailySeed);
+            if (this.gameMode === 'endless') this.endlessLevel = 1;
+            this.gameRunning = true;
+            this.setupLevel(); this.updateUI(); this.startTimer();
+            this.levelIntroLevel = this.level; this.levelIntroProgress = 0.001; this.levelIntroActive = true;
+            this.tutorialActive = (this.level === 1); this.tutorialProgress = 0;
+        });
     }
 
     saveHighScore() {
@@ -1853,12 +2276,15 @@ class TiltBallGame {
         this.settings.haptic      = document.getElementById('hapticToggle').checked;
         this.settings.trail       = document.getElementById('trailToggle').checked;
         this.settings.autoPause   = document.getElementById('autoPauseToggle').checked;
+        this.settings.music       = document.getElementById('musicToggle').checked;
+        this.settings.colourblind = document.getElementById('colourblindToggle').checked;
+        this.settings.assist      = document.getElementById('assistToggle').checked;
         try {
             localStorage.setItem('tiltSphereSettings', JSON.stringify(this.settings));
             this.closeSettings();
             document.getElementById('saveStatus').textContent='Settings saved!';
             setTimeout(()=>{ if(document.getElementById('saveStatus').textContent.includes('Settings saved!')) document.getElementById('saveStatus').textContent=''; },3000);
-        } catch(e) { alert('Failed to save settings.'); }
+        } catch(e) { this.showNotification('Save failed','Storage may be full',2500); }
     }
 }
 
@@ -1871,6 +2297,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.innerHTML = `<div style="color:#fff;text-align:center;padding:50px"><h2>Game Failed to Load</h2><p>Please refresh.</p><p style="font-size:12px;margin-top:20px">Error: ${e.message}</p></div>`;
     }
 });
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
 </script>
 </body>
 </html>
