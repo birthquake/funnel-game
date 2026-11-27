@@ -31,3 +31,4 @@ Sensitivity, sound, haptics, ball trail, music, auto-pause, assist, and a high-c
 ## Development
 
 Everything lives in `index.html` (one `TiltBallGame` class). Progress is saved in the browser's `localStorage`. When you change `index.html`, bump the `CACHE` name in `sw.js` so installed copies pick up the update.
+- **Welcome back:** if you return after a few hours away, the game offers to continue your level and reminds you if your Daily Challenge streak is at risk.
